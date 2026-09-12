@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Tu equipo, su cobertura y el mejor cambio para tu randomlocke.">
+  <title>Randomlocke · Asesor de equipo</title><link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header><div class="brand">R<span>◈</span> / Randomlocke</div><span class="muted">Añil · 18 tipos</span></header>
+  <main>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section aria-labelledby="team-title">
+      <div class="section-head"><h1 id="team-title">Mi equipo <span id="count">0 / 6</span></h1><button id="add">+ Agregar Pokémon</button></div>
+      <div id="team" class="team"></div>
+    </section>
+    <div class="workspace">
+      <section class="panel" aria-labelledby="rival-title">
+        <div class="section-head"><h2 id="rival-title">Rival</h2><button id="choose-rival" class="secondary">Elegir rival</button></div>
+        <div id="rival" class="empty">Elegí a quién te enfrentás.</div>
+        <div id="revealed"></div>
+      </section>
+      <section class="panel" aria-labelledby="rank-title">
+        <div class="section-head"><h2 id="rank-title">Mejor cambio</h2><span class="muted">Aguante → respuesta</span></div>
+        <p class="hint">Comparación con estadísticas base. No predice daño exacto ni supervivencia.</p>
+        <div id="ranking" aria-live="polite" class="empty">Cargá tu equipo y un rival para comparar.</div>
+      </section>
+    </div>
+    <section class="panel" aria-labelledby="coverage-title">
+      <h2 id="coverage-title">Cobertura del equipo</h2><p class="hint">Ataque contra tipos puros; defensa con tus tipos dobles y efectos soportados. No predice el repertorio rival.</p>
+      <div id="coverage" class="coverage empty">Agregá un Pokémon para ver la cobertura.</div>
+    </section>
+    <details class="notes"><summary>Cómo leer los resultados</summary>
+      <p>Primero se ordena por presión recibida; después por respuesta y velocidad. Verde significa presión baja, amarillo media y rojo alta, incluso si todo el equipo queda del mismo color.</p>
+      <p>Índice de presión = potencia × ataque / defensa × STAB × efectividad × efectos / PS base. No es daño ni un porcentaje. Referencia neutral: 1,50; verde hasta 0,75 y rojo por encima de 2,25.</p>
+      <p>Mientras falten ataques, se conservan estimaciones STAB de potencia 80, físicas y especiales. La cobertura aleatoria desconocida puede cambiar por completo la recomendación.</p>
+      <p>Velocidad y prioridad orientan la respuesta posterior: cambiar de Pokémon consume tu acción. No se modelan clima, estados, críticos, precisión, retroceso, activaciones previas ni cambios específicos de Añil.</p>
+    </details>
+  </main>
+  <dialog id="editor" aria-labelledby="editor-title">
+    <form id="edit-form">
+      <div class="section-head"><h2 id="editor-title">Agregar Pokémon</h2><button type="button" id="close" class="secondary" aria-label="Cerrar editor">Cerrar</button></div>
+      <label>Pokémon<input id="pokemon-input" list="pokemon-list" autocomplete="off" required placeholder="Ej.: Gyarados"></label>
+      <datalist id="pokemon-list"></datalist>
+      <p class="hint">Buscá por el nombre del catálogo; las formas aparecen por separado.</p>
+      <div id="pokemon-preview"></div>
+      <label>Habilidad<select id="ability"><option value="">Elegí primero un Pokémon</option></select></label>
+      <label>Objeto <span class="muted">opcional</span><input id="item-input" list="item-list" autocomplete="off" placeholder="Ej.: Choice Band"></label>
+      <datalist id="item-list"></datalist>
+      <fieldset><legend id="moves-title">Movimientos</legend><div id="move-fields"></div></fieldset>
+      <datalist id="move-list"></datalist>
+      <p class="hint">Catálogo de movimientos y objetos en inglés; los movimientos seleccionados muestran su traducción. Selección libre por randomlocke.</p>
+      <p id="form-error" role="alert"></p>
+      <button id="save" type="submit">Guardar</button>
+    </form>
+  </dialog>
+</body>
+</html>
