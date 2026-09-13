@@ -1,4 +1,4 @@
-import { PokeClient, ApiError } from '../pokemon/client.ts';
+import { PokeClient, ApiError, localized } from '../pokemon/client.ts';
 import { rank, coverage } from '../engine/index.ts';
 import { warnings } from '../engine/effects.ts';
 import type { Member, Selection } from '../engine/model.ts';
@@ -14,8 +14,8 @@ export function validateSelection(value: any, rival = false): Selection {
 export async function hydrate(client: PokeClient, value: Selection): Promise<Member> {
   const p = await client.pokemon(value.pokemon);
   if (value.ability && !p.abilities.some(a => a.id === value.ability)) throw new ApiError(`La habilidad elegida no corresponde a ${p.label}.`, 400);
-  if (value.item) await client.get(`item/${value.item}`);
-  return {...p, ability: value.ability, item: value.item, moves: await Promise.all(value.moves.map(m => client.move(m)))};
+  const itemLabel = value.item ? localized(await client.get(`item/${value.item}`), 'item') : null;
+  return {...p, ability: value.ability, item: value.item, itemLabel, moves: await Promise.all(value.moves.map(m => client.move(m)))};
 }
 export async function analyze(client: PokeClient, body: any) {
   if (!body || !Array.isArray(body.team) || body.team.length > 6) throw new ApiError('El equipo admite hasta seis Pokémon.', 400);

@@ -2,6 +2,7 @@ const $ = id => document.getElementById(id);
 const names = {normal:'Normal',fire:'Fuego',water:'Agua',electric:'Eléctrico',grass:'Planta',ice:'Hielo',fighting:'Lucha',poison:'Veneno',ground:'Tierra',flying:'Volador',psychic:'Psíquico',bug:'Bicho',rock:'Roca',ghost:'Fantasma',dragon:'Dragón',dark:'Siniestro',steel:'Acero',fairy:'Hada'};
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slug = text => text.trim().toLowerCase().replaceAll(' ', '-');
+const normalizedName = text => slug(text.normalize('NFD').replace(/\p{M}/gu, ''));
 const badge = type => `<span class="type ${esc(type)}">${esc(names[type] ?? type)}</span>`;
 const sprite = p => p.sprite && /^https:\/\/raw\.(githubusercontent\.com|github\.com)\//.test(p.sprite) ? `<img class="sprite" src="${esc(p.sprite)}" alt="${esc(p.label)}" width="72" height="72">` : '<span class="no-sprite" aria-label="Sin sprite">?</span>';
 const storageKey = 'randomlocke.team.v1';
@@ -77,8 +78,8 @@ async function loadCatalogs() {
 }
 function resolveInput(kind, input) {
   if (!input.trim()) return null;
-  const normalized = slug(input);
-  return catalogs[kind]?.find(entry => entry.id === normalized || slug(entry.label) === normalized)?.id ?? normalized;
+  const normalized = normalizedName(input);
+  return catalogs[kind]?.find(entry => [entry.id,entry.label,...(entry.aliases ?? [])].some(name => normalizedName(name) === normalized))?.id ?? slug(input);
 }
 function setMoveFields(moves = []) {
   $('move-fields').innerHTML = Array.from({length:4},(_,i) => `<label>Movimiento ${i+1}<input class="move-input" id="move-${i}" list="move-list" autocomplete="off" value="${esc(moves[i] ? catalogs.move?.find(m => m.id === moves[i])?.label ?? moves[i] : '')}" placeholder="Desconocido / vacío"><small id="move-detail-${i}" class="muted"></small></label>`).join('');

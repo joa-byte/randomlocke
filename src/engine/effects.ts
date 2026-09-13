@@ -51,7 +51,7 @@ export function pressure(attacker: Member, defender: Member, move: Move): number
 export function warnings(member: Member): string[] {
   const out: string[] = [];
   if (member.ability && !SUPPORTED_ABILITIES.includes(member.ability)) out.push(`Habilidad no calculada: ${member.abilities.find(a => a.id === member.ability)?.label ?? member.ability}.`);
-  if (member.item && !SUPPORTED_ITEMS.includes(member.item)) out.push(`Objeto no calculado: ${member.item}.`);
+  if (member.item && !SUPPORTED_ITEMS.includes(member.item)) out.push(`Objeto no calculado: ${member.itemLabel ?? member.item}.`);
   if (member.item?.startsWith('choice-')) out.push('Objeto Elegido: se aplica la mejora, pero no se conoce el bloqueo de movimiento.');
   if (member.item === 'life-orb') out.push('Vidasfera: se aplica el daño extra, sin modelar el retroceso.');
   if (member.ability && SUPPORTED_ABILITIES.includes(member.ability)) out.push('Habilidad: solo efectos directos; sin acumulaciones ni activaciones previas.');

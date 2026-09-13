@@ -24,7 +24,9 @@ No hay compilación ni dependencias de producción. `npm start` funciona incluso
 3. Revelar ataques con los cuatro botones del rival. El ranking se recalcula al guardar.
 4. Consultar cobertura ofensiva, debilidades compartidas y tipos sin resistencias/inmunidades.
 
-Las formas aparecen como entradas separadas. Las habilidades incluyen las ocultas y se validan en el servidor. Los movimientos se pueden elegir libremente. Los catálogos de búsqueda usan nombres en inglés (p. ej. `Thunderbolt`, `Ice Beam`, `Choice Band`); los detalles de movimientos y habilidades muestran el nombre en español disponible en PokéAPI.
+Las formas aparecen como entradas separadas. Las habilidades incluyen las ocultas y se validan en el servidor. Los movimientos se pueden elegir libremente. Los catálogos muestran nombres en español (p. ej. `Rayo`, `Rayo Hielo`, `Cinta Elección`), ordenados alfabéticamente. Al escribir se aceptan mayúsculas, nombres sin tildes y los originales en inglés. También se traducen las formas disponibles, estimaciones y objetos en las advertencias. Cuando dos recursos tienen el mismo nombre, el selector añade su número para distinguirlos. Sin traducción disponible se conserva el nombre original.
+
+Los IDs internos y el equipo guardado no cambian con el idioma. Las traducciones se incluyen en `src/pokemon/es.json`, extraídas de los [CSV de PokéAPI](https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv): 937 movimientos, 2173 objetos, 311 habilidades y 1203 Pokémon/formas en esta versión. No se consultan cientos de detalles para traducir un catálogo. El script opcional `node scripts/update-translations.mjs` regenera el archivo desde la fuente; requiere Internet solo al ejecutarlo.
 
 El equipo se guarda en **localStorage del navegador y origen actual**. El rival se mantiene solo mientras está abierta la página. No se guarda nada del equipo en el servidor; este lo recibe para calcular. Un fallo de cálculo no reemplaza el último equipo guardado.
 

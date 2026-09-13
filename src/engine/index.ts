@@ -1,5 +1,6 @@
 import { TYPES, type Member, type Move } from './model.ts';
 import { multiplier, pressure, speed, warnings } from './effects.ts';
+const typeNames = {normal:'Normal',fire:'Fuego',water:'Agua',electric:'Eléctrico',grass:'Planta',ice:'Hielo',fighting:'Lucha',poison:'Veneno',ground:'Tierra',flying:'Volador',psychic:'Psíquico',bug:'Bicho',rock:'Roca',ghost:'Fantasma',dragon:'Dragón',dark:'Siniestro',steel:'Acero',fairy:'Hada'};
 
 function evaluated(attacker: Member, defender: Member, moves: Move[]) {
   return moves.map(move => ({ move, value: pressure(attacker, defender, move) }))
@@ -9,7 +10,7 @@ function evaluated(attacker: Member, defender: Member, moves: Move[]) {
 
 export function rank(team: Member[], rival: Member) {
   const synthetic: Move[] = rival.types.flatMap(type => (['physical','special'] as const).map(category => ({
-    id: `estimate-${type}-${category}`, label: `Estimación ${type} (${category === 'physical' ? 'físico' : 'especial'})`,
+    id: `estimate-${type}-${category}`, label: `Estimación ${typeNames[type]} (${category === 'physical' ? 'físico' : 'especial'})`,
     type, category, power: 80, accuracy: 100, priority: 0, unsupported: false
   })));
   // Unknown slots retain a STAB baseline, but never pretend to reveal randomized coverage.
