@@ -64,8 +64,8 @@ function render() {
     <div class="match-head">${sprite(r)}<strong>${esc(r.label)}</strong></div>
     <p class="hint base-speed">Velocidad base: tu Pokémon ${r.speed} · rival ${r.rivalSpeed}</p>
     <div class="pros-cons">
-      <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.')}</div>
-      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces reveladas.' : 'Sin ataques rivales revelados.')}</div>
+      <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.', 'outgoing')}</div>
+      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces reveladas.' : 'Sin ataques rivales revelados.', 'incoming')}</div>
     </div>
     <details><summary>Ver todos los ataques</summary>
       <p class="hint">Ataque y defensa base, sin modificadores.</p>
@@ -73,7 +73,8 @@ function render() {
       <h3 class="minor">Ataques del rival</h3>${attackList(r.incoming, 'Sin ataques revelados.', 'incoming')}
       ${r.warnings.length ? `<p class="hint">${r.warnings.map(esc).join(' ')}</p>` : ''}
     </details>
-  </article>`).join('') + (result.warnings.length ? `<p class="hint">${result.warnings.map(esc).join(' ')}</p>` : '') : 'Cargá tu equipo y un rival para comparar.';
+  </article>`).join('') : 'Cargá tu equipo y un rival para comparar.';
+  $('comparison-notice').textContent = result.warnings.join(' ');
   const c = result.coverage;
   $('coverage').className = 'coverage';
   $('coverage').innerHTML = team.length ? [

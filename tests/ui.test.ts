@@ -89,6 +89,8 @@ test('DOM + HTTP: create/edit team, reveal rival moves, errors, persistence and 
     assert.match(d.querySelector('#revealed')!.textContent!,/1 \/ 4/);
     assert.match(d.querySelector('.match .cons')!.textContent!,/Rayo.*×4/);
     assert.match(d.querySelector('.match .cons .stab')!.textContent!,/STAB ×1,5/);
+    assert.match(d.querySelector('.match .cons .attack-stats')!.textContent!,/Rival At. Esp. 80 \/ Tu Def. Esp. 80/);
+    assert.equal(d.querySelector('.match .cons .attack-stats')!.closest('details'),null);
     assert.match(d.querySelector('.match details .attack-stats')!.textContent!,/Potencia base 90/);
     assert.match(d.querySelector('.match .base-speed')!.textContent!,/Velocidad base/);
     assert.ok(!d.body.textContent!.includes('Solo ataques cargados y habilidades conocidas. Sin estimar ataques rivales.'));
