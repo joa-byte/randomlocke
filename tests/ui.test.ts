@@ -88,6 +88,10 @@ test('DOM + HTTP: create/edit team, reveal rival moves, errors, persistence and 
     assert.match(d.querySelector('#revealed')!.textContent!,/Rayo/);
     assert.match(d.querySelector('#revealed')!.textContent!,/1 \/ 4/);
     assert.match(d.querySelector('.match .cons')!.textContent!,/Rayo.*×4/);
+    assert.match(d.querySelector('.match .cons .stab')!.textContent!,/STAB ×1,5/);
+    assert.match(d.querySelector('.match details .attack-stats')!.textContent!,/Potencia base 90/);
+    assert.match(d.querySelector('.match .base-speed')!.textContent!,/Velocidad base/);
+    assert.ok(!d.body.textContent!.includes('Solo ataques cargados y habilidades conocidas. Sin estimar ataques rivales.'));
     assert.equal(d.querySelector('.match details')!.hasAttribute('open'),false);
     // Invalid move: failed candidate never replaces saved data.
     const stored = dom.window.localStorage.getItem('randomlocke.team.v1');

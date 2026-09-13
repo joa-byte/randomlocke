@@ -16,7 +16,19 @@ export function attackEffect(move: Move, attacker: Member, defender: Member) {
     if (attacker.ability === 'tinted-lens' && value > 0 && value < 1) value *= 2;
     if (value !== effectiveness(move.type, defender.types)) note = 'Ajustado por habilidad';
   }
-  return {id: move.id, label: move.label, type: move.type, value, note};
+  const damaging = move.category !== 'status';
+  const variableType = ['weather-ball','terrain-pulse','judgment','multi-attack','techno-blast','revelation-dance','tera-blast','terastar-storm'].includes(move.id) || TYPE_ABILITIES.has(attacker.ability ?? '');
+  const stab = !damaging || !move.power || variableType || move.id === 'struggle' ? null
+    : attacker.types.includes(move.type) ? attacker.ability === 'adaptability' ? 2 : 1.5 : 1;
+  const unusualStats = ['psyshock','psystrike','secret-sword','foul-play','body-press','photon-geyser','light-that-burns-the-sky','shell-side-arm','tera-blast'].includes(move.id);
+  const physical = move.category === 'physical';
+  const comparison = !damaging || unusualStats ? null : {
+    attackLabel: physical ? 'Atq.' : 'At. Esp.', defenseLabel: physical ? 'Def.' : 'Def. Esp.',
+    attack: attacker.stats[physical ? 'attack' : 'special-attack'],
+    defense: defender.stats[physical ? 'defense' : 'special-defense']
+  };
+  return {id: move.id, label: move.label, type: move.type, value, note,
+    category:move.category, power:move.power, stab, comparison};
 }
 export function matchupWarnings(member: Member) {
   return member.ability && !SUPPORTED_ABILITIES.includes(member.ability)
@@ -27,6 +39,7 @@ export function compareTeam(team: Member[], rival: Member) {
     const outgoing = member.moves.map(move => attackEffect(move, member, rival));
     const incoming = rival.moves.map(move => attackEffect(move, rival, member));
     return {pokemon:member.id,label:member.label,sprite:member.sprite,
+      speed:member.stats.speed,rivalSpeed:rival.stats.speed,
       pros:outgoing.filter(m => m.value !== null && m.value > 1),
       cons:incoming.filter(m => m.value !== null && m.value > 1),
       outgoing,incoming,warnings:matchupWarnings(member)};

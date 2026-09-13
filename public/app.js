@@ -31,7 +31,11 @@ function persist() {
   catch { notice('El equipo funciona, pero el navegador no permitió guardarlo.'); }
 }
 const factor = n => '×' + String(n).replace('.', ',');
-const attackList = (moves, empty) => moves.length ? `<ul class="effect-list">${moves.map(m => `<li>${badge(m.type)} <span>${esc(m.label)}</span> <strong>${m.value === null ? '—' : factor(m.value)}</strong>${m.note ? `<small>${esc(m.note)}</small>` : ''}</li>`).join('')}</ul>` : `<p class="hint">${esc(empty)}</p>`;
+const attackList = (moves, empty, direction = null) => moves.length ? `<ul class="effect-list">${moves.map(m => `<li>${badge(m.type)} <span>${esc(m.label)}</span> <strong>${m.value === null ? '—' : factor(m.value)}</strong>
+  <span class="move-category">${m.category === 'physical' ? 'Físico' : m.category === 'special' ? 'Especial' : 'Estado'}</span>
+  ${m.stab > 1 ? `<strong class="stab" title="Bonificación por coincidir con un tipo del atacante${m.stab === 2 ? '; Adaptable' : ''}">STAB ${factor(m.stab)}</strong>` : ''}
+  ${direction && m.category !== 'status' ? `<small class="attack-stats">Potencia base ${m.power ?? 'variable'} · ${m.comparison ? `${direction === 'outgoing' ? 'Tu' : 'Rival'} ${m.comparison.attackLabel} ${m.comparison.attack} / ${direction === 'outgoing' ? 'Rival' : 'Tu'} ${m.comparison.defenseLabel} ${m.comparison.defense}` : 'Estadísticas especiales: sin comparar'}${m.stab === null ? ' · STAB sin calcular' : ''}</small>` : ''}
+  ${m.note ? `<small>${esc(m.note)}</small>` : ''}</li>`).join('')}</ul>` : `<p class="hint">${esc(empty)}</p>`;
 const stats = p => `<div class="stats">${[['hp','PS'],['attack','Atq'],['defense','Def'],['special-attack','At. Esp.'],['special-defense','Def. Esp.'],['speed','Vel']].map(([key,label]) => `<span>${label}<strong>${p.stats[key]}</strong></span>`).join('')}</div>`;
 const monHead = p => `<div class="mon-head">${sprite(p)}<div><h3>${esc(p.label)}</h3><div class="badges">${p.types.map(badge).join('')}</div></div></div>`;
 function render() {
@@ -58,13 +62,15 @@ function render() {
   $('ranking').className = result.matchups.length ? 'matchups' : 'empty';
   $('ranking').innerHTML = result.matchups.length ? result.matchups.map(r => `<article class="match matchup">
     <div class="match-head">${sprite(r)}<strong>${esc(r.label)}</strong></div>
+    <p class="hint base-speed">Velocidad base: tu Pokémon ${r.speed} · rival ${r.rivalSpeed}</p>
     <div class="pros-cons">
       <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.')}</div>
       <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces reveladas.' : 'Sin ataques rivales revelados.')}</div>
     </div>
     <details><summary>Ver todos los ataques</summary>
-      <h3 class="minor">Tus ataques</h3>${attackList(r.outgoing, 'Sin movimientos cargados.')}
-      <h3 class="minor">Ataques del rival</h3>${attackList(r.incoming, 'Sin ataques revelados.')}
+      <p class="hint">Ataque y defensa base, sin modificadores.</p>
+      <h3 class="minor">Tus ataques</h3>${attackList(r.outgoing, 'Sin movimientos cargados.', 'outgoing')}
+      <h3 class="minor">Ataques del rival</h3>${attackList(r.incoming, 'Sin ataques revelados.', 'incoming')}
       ${r.warnings.length ? `<p class="hint">${r.warnings.map(esc).join(' ')}</p>` : ''}
     </details>
   </article>`).join('') + (result.warnings.length ? `<p class="hint">${result.warnings.map(esc).join(' ')}</p>` : '') : 'Cargá tu equipo y un rival para comparar.';

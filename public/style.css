@@ -198,6 +198,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .effect-list { list-style: none; padding: 0; margin: 6px 0; }
 .effect-list li { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: .875rem; }
 .effect-list strong { white-space: nowrap; }
+.effect-list .stab { color: #800020; font-weight: 800; }
+.move-category { color: var(--muted); font-size: .8125rem; }
+.attack-stats { line-height: 1.6; }
 .effect-list small { flex-basis: 100%; color: var(--muted); }
 .defensive-groups { display: grid; gap: 10px; }
 .defensive-group { padding: 10px; border: 1px solid #809188; background: #f4f2e5; font-size: .875rem; }

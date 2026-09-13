@@ -42,6 +42,10 @@ A la derecha hay una ficha por integrante en el orden del equipo, con sprite peq
 
 No hay clasificación, presión, velocidad estimada ni ataques sintéticos. Los huecos del rival permanecen desconocidos. Los multiplicadores no son daño final: no incorporan potencia, estadísticas, STAB ni objetos.
 
+Cada ataque muestra su categoría física/especial y, si corresponde, **STAB ×1,5** en negrita bordó (×2 con Adaptable). Esta etiqueta es independiente de la efectividad: no se combinan en un multiplicador total. En el desplegable se muestran potencia base y las estadísticas base ofensiva/defensiva correspondientes, con la perspectiva correcta para tus ataques y los del rival. Las mecánicas que usan otras estadísticas no se comparan como ataques ordinarios. No se aplican objetos ni modificadores a los números base.
+
+La cabecera de la ficha compara ambas velocidades base como referencia, sin recomendar un Pokémon ni predecir el orden real de acción. Se mantienen el orden del equipo y el criterio de pros/contras basado exclusivamente en efectividad.
+
 En las fichas se aplican las inmunidades y modificadores directos de habilidades soportadas, como Levitación, Absorbe Agua, Absorbe Electricidad, Sebo o Filtro; se señala cuando modifican el resultado. No se adivina la habilidad rival. Habilidades no soportadas se advierten en los detalles.
 
 Ataques como Acróbata o Doble Patada conservan su efectividad por tipos aunque no se calcule su daño. Los movimientos de estado, daño especial o efectividad variable no soportada aparecen con una aclaración y sin multiplicador. No se simulan clima, terreno, objetos, activaciones previas ni cambios particulares de Añil.

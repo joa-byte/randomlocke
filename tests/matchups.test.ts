@@ -35,3 +35,17 @@ test('defensive table accounts for dual typing and contains every type exactly o
   assert.ok(groups.find(g=>g.value===0)!.types.includes('ground'));
   assert.equal(new Set(groups.flatMap(g=>g.types)).size,18);
 });
+
+test('physical/special stats and STAB are informational and separate from effectiveness', () => {
+  const a=mon('a',['ground'],{stats:{hp:80,attack:125,defense:90,'special-attack':65,'special-defense':75,speed:81}});
+  const d=mon('d',['electric'],{stats:{hp:80,attack:105,defense:70,'special-attack':120,'special-defense':100,speed:125}});
+  const physical=attackEffect(move('ground','physical',100),a,d);
+  assert.equal(physical.value,2); assert.equal(physical.stab,1.5);
+  assert.deepEqual(physical.comparison,{attackLabel:'Atq.',defenseLabel:'Def.',attack:125,defense:70});
+  const special=attackEffect(move('water','special',90),d,a);
+  assert.equal(special.stab,1); assert.equal(special.comparison!.attack,120); assert.equal(special.comparison!.defense,75);
+  assert.equal(attackEffect(move('ground'),{...a,ability:'adaptability'},d).stab,2);
+  assert.equal(attackEffect(move('ground','status',null),a,d).stab,null);
+  assert.equal(attackEffect(move('ground','physical',80,{id:'body-press'}),a,d).comparison,null);
+  const card=compareTeam([a],d)[0]; assert.equal(card.speed,81); assert.equal(card.rivalSpeed,125);
+});
