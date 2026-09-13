@@ -21,7 +21,7 @@ No hay compilación ni dependencias de producción. `npm start` funciona incluso
 
 1. Agregar hasta seis Pokémon, elegir una habilidad válida, objeto opcional y hasta cuatro movimientos.
 2. Elegir el rival. Su habilidad y objeto pueden quedar desconocidos.
-3. Revelar ataques con los cuatro botones del rival. El ranking se recalcula al guardar.
+3. Revelar ataques con los cuatro botones del rival. Las fichas se actualizan al guardar.
 4. Consultar cobertura ofensiva, debilidades compartidas y tipos sin resistencias/inmunidades.
 
 Las formas aparecen como entradas separadas. Las habilidades incluyen las ocultas y se validan en el servidor. Los movimientos se pueden elegir libremente. Los catálogos muestran nombres en español (p. ej. `Rayo`, `Rayo Hielo`, `Cinta Elección`), ordenados alfabéticamente. Al escribir se aceptan mayúsculas, nombres sin tildes y los originales en inglés. También se traducen las formas disponibles, estimaciones y objetos en las advertencias. Cuando dos recursos tienen el mismo nombre, el selector añade su número para distinguirlos. Sin traducción disponible se conserva el nombre original.
@@ -30,41 +30,27 @@ Los IDs internos y el equipo guardado no cambian con el idioma. Las traducciones
 
 El equipo se guarda en **localStorage del navegador y origen actual**. El rival se mantiene solo mientras está abierta la página. No se guarda nada del equipo en el servidor; este lo recibe para calcular. Un fallo de cálculo no reemplaza el último equipo guardado.
 
-## Criterio del ranking
+## Comparación de efectividad
 
-Se usan estadísticas **base** de PokéAPI: PS, Ataque, Defensa, Ataque Especial, Defensa Especial y Velocidad. No hay nivel, IV, EV ni vida actual.
+Debajo del rival se agrupan los 18 tipos por multiplicador defensivo (×4, ×2, ×1, ×0,5, ×0,25, ×0). Esta tabla considera solo los tipos, como una calculadora.
 
-Para cada ataque calculable:
+A la derecha hay una ficha por integrante en el orden del equipo, con sprite pequeño:
 
-`presión = potencia × ataque / defensa × STAB × efectividad × efectos / PS base del defensor`
+- **Pros:** tus ataques cargados con multiplicador mayor que ×1 contra el rival.
+- **Contras:** ataques revelados del rival con multiplicador mayor que ×1 contra ese integrante.
+- **Ver todos los ataques:** incluye neutros, resistidos, inmunes, estado y mecánicas no calculadas.
 
-Se elige Ataque/Defensa o Ataque Especial/Defensa Especial según la categoría. El índice es una comparación heurística: **no es la fórmula de daño del juego, un porcentaje de vida ni una probabilidad de victoria**. Las proporciones de estadísticas base no equivalen a proporciones de estadísticas reales.
+No hay clasificación, presión, velocidad estimada ni ataques sintéticos. Los huecos del rival permanecen desconocidos. Los multiplicadores no son daño final: no incorporan potencia, estadísticas, STAB ni objetos.
 
-- Aguante: peor presión recibida entre las amenazas consideradas.
-- Respuesta: mayor presión que puede generar uno de tus movimientos.
-- Orden: presión recibida ascendente; a igualdad, respuesta descendente; a igualdad, velocidad descendente. No se mezclan con pesos opacos. Es deliberadamente conservador: no sacrifica aguante por más daño.
-- Semáforo fijo: verde `≤ 0,75`; amarillo `≤ 2,25`; rojo `> 2,25`. Referencia neutral: ataque STAB de potencia 80, 80 PS y estadísticas ofensiva/defensiva iguales da `1,50`. Son umbrales heurísticos, no umbrales de KO. Todo el equipo puede quedar rojo.
-- Velocidad base (y Pañuelo Elegido) y prioridad se muestran como indicios de la respuesta, no como certeza. Cambiar consume la acción: no se considera que el Pokémon entrante ataque antes de recibir el golpe.
+En las fichas se aplican las inmunidades y modificadores directos de habilidades soportadas, como Levitación, Absorbe Agua, Absorbe Electricidad, Sebo o Filtro; se señala cuando modifican el resultado. No se adivina la habilidad rival. Habilidades no soportadas se advierten en los detalles.
 
-Mientras falten movimientos rivales, se conservan ataques sintéticos de potencia 80 para cada tipo STAB rival, físicos y especiales. No son ataques confirmados ni un máximo posible: el randomlocke puede dar cobertura inesperada. Con cuatro movimientos revelados se usa solo ese repertorio. Los ataques no calculables generan advertencias; si no existe ningún ataque evaluable, el aguante queda desconocido (amarillo), salvo que los cuatro sean de estado.
+Ataques como Acróbata o Doble Patada conservan su efectividad por tipos aunque no se calcule su daño. Los movimientos de estado, daño especial o efectividad variable no soportada aparecen con una aclaración y sin multiplicador. No se simulan clima, terreno, objetos, activaciones previas ni cambios particulares de Añil.
 
-La cobertura ofensiva comprueba supereficacia de ataques calculables contra **tipos puros**, no contra todas las combinaciones dobles. Los ataques de mecánica no soportada quedan fuera. La defensiva respeta tipos dobles y habilidades implementadas. No se confunde una resistencia de tipo con aguante físico/especial.
-
-## Efectos implementados
-
-Habilidades (identificadores de PokéAPI): `levitate`, `water-absorb`, `storm-drain`, `dry-skin`, `volt-absorb`, `lightning-rod`, `motor-drive`, `flash-fire`, `sap-sipper`, `thick-fat`, `wonder-guard`, `filter`, `solid-rock`, `prism-armor`, `adaptability`, `huge-power`, `pure-power`, `technician`, `tinted-lens`, `mold-breaker`, `teravolt`, `turboblaze`, `fur-coat`, `ice-scales`.
-
-Solo sus efectos directos: inmunidades, multiplicadores y anulación de habilidades. No se simulan curación, aumentos por activaciones previas, turnos o estados. Por ejemplo, Absorbe Fuego da inmunidad pero no un aumento ofensivo asumido. Rompemoldes no anula Prisma Armadura.
-
-Objetos: `choice-band`, `choice-specs`, `choice-scarf`, `assault-vest`, `life-orb`, `expert-belt`, `muscle-band`, `wise-glasses`. Se calcula la mejora directa; el bloqueo Elegido y retroceso de Vidasfera quedan advertidos, sin simulación.
-
-Otros objetos y habilidades pueden seleccionarse, pero se marcan como no calculados en el ranking. La habilidad y objeto rival desconocidos no se adivinan.
-
-Los ataques de estado no puntúan como daño. Potencia nula, golpes múltiples, movimientos de varios turnos y excepciones explícitas (Psyshock, Body Press, Foul Play, Freeze-Dry, etc.) quedan fuera del daño con advertencia. La lista está en `src/pokemon/client.ts`; no pretende implementar todas las mecánicas. Efectos secundarios, precisión, críticos, clima, terreno, boosts, estados, retroceso y cambios particulares de Añil no se modelan. Los datos son los de PokéAPI, no una extracción de la ROM.
+Las estadísticas base se siguen mostrando como referencia. Los módulos antiguos de presión y ranking se conservan aislados, pero ya no se utilizan en el endpoint de análisis ni en la interfaz.
 
 ## Arquitectura
 
-- `src/engine/`: tipos, efectos, presión, ranking y cobertura. Funciones puras sin HTTP ni DOM.
+- `src/engine/`: tipos, efectos, presión, comparación y cobertura. Funciones puras sin HTTP ni DOM.
 - `src/pokemon/`: adaptador de PokéAPI, traducción de detalles y caché en memoria/disco (`.cache/pokeapi`, archivos válidos por 30 días al cargar). Coalescencia de solicitudes concurrentes; no cachea errores.
 - `src/routes/`: validación de selecciones y análisis.
 - `src/server.ts`: HTTP nativo, recursos estáticos explícitos, límite de cuerpo de 16 KiB y errores JSON.
@@ -82,7 +68,7 @@ npm run check
 npm test
 ```
 
-Los tests automatizados no requieren Internet: usan fixtures controladas. Incluyen tipos dobles, inmunidades, defensas físicas/especiales, objetos y habilidades, cobertura, incertidumbre, actualización del ranking, validaciones HTTP, caché y flujo de formularios/persistencia del DOM. GitHub Actions ejecuta los mismos comandos en Node 24.
+Los tests automatizados no requieren Internet: usan fixtures controladas. Incluyen tipos dobles, inmunidades, defensas físicas/especiales, objetos y habilidades, cobertura, incertidumbre, actualización de pros y contras, validaciones HTTP, caché y flujo de formularios/persistencia del DOM. GitHub Actions ejecuta los mismos comandos en Node 24.
 
 El test DOM no sustituye una revisión visual de Chrome. En el entorno de implementación, el navegador remoto bloqueó `127.0.0.1`; la inspección visual y móvil real quedó pendiente. Se comprobó por separado la conexión real con PokéAPI.
 

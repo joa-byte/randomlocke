@@ -188,6 +188,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   #move-fields { grid-template-columns: 1fr; }
   dialog { padding: 18px; }
 }
+.matchups { display: grid; gap: 12px; }
+.matchup { border: 2px solid #809188; background: #fffef2; }
+.matchup .match-head { justify-content: flex-start; align-items: center; gap: 10px; }
+.matchup .sprite, .matchup .no-sprite { width: 48px; height: 48px; min-height: 48px; }
+.pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+.pros h3 { color: #205e3b; font-size: .875rem; }
+.cons h3 { color: #912f35; font-size: .875rem; }
+.effect-list { list-style: none; padding: 0; margin: 6px 0; }
+.effect-list li { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: .875rem; }
+.effect-list strong { white-space: nowrap; }
+.effect-list small { flex-basis: 100%; color: var(--muted); }
+.defensive-groups { display: grid; gap: 10px; }
+.defensive-group { padding: 10px; border: 1px solid #809188; background: #f4f2e5; font-size: .875rem; }
+@media (max-width: 600px) { .pros-cons { grid-template-columns: 1fr; gap: 10px; } }
 @media (prefers-reduced-motion: reduce) {
   button:active:not(:disabled) { translate: none; }
 }

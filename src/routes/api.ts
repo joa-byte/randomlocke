@@ -1,6 +1,6 @@
 import { PokeClient, ApiError, localized } from '../pokemon/client.ts';
-import { rank, coverage } from '../engine/index.ts';
-import { warnings } from '../engine/effects.ts';
+import { coverage } from '../engine/index.ts';
+import { compareTeam, defensiveTypes, matchupWarnings } from '../engine/matchups.ts';
 import type { Member, Selection } from '../engine/model.ts';
 
 const slug = (value: unknown): value is string => typeof value === 'string' && /^[a-z0-9-]{1,80}$/.test(value);
@@ -23,6 +23,7 @@ export async function analyze(client: PokeClient, body: any) {
   const rivalSelection = body.rival ? validateSelection(body.rival, true) : null;
   const team = await Promise.all(selections.map((s: Selection) => hydrate(client, s)));
   const rival = rivalSelection ? await hydrate(client, rivalSelection) : null;
-  return {team: team.map(p => ({...p, warnings: warnings(p)})), rival, coverage: coverage(team), ranking: rival ? rank(team, rival) : [],
-    warnings: rival ? [...warnings(rival), ...(!rival.ability ? ['Habilidad rival desconocida.'] : []), ...(!rival.item ? ['Objeto rival desconocido.'] : [])] : []};
+  return {team: team.map(p => ({...p, warnings: matchupWarnings(p)})), rival, coverage: coverage(team), matchups: rival ? compareTeam(team, rival) : [],
+    defensiveTypes: rival ? defensiveTypes(rival) : [],
+    warnings: rival ? [...matchupWarnings(rival), ...(!rival.ability ? ['Habilidad rival desconocida: no se asumen inmunidades adicionales.'] : [])] : []};
 }

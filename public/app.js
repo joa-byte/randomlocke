@@ -30,6 +30,8 @@ function persist() {
   try { localStorage.setItem(storageKey, JSON.stringify({version:1,team})); }
   catch { notice('El equipo funciona, pero el navegador no permitió guardarlo.'); }
 }
+const factor = n => '×' + String(n).replace('.', ',');
+const attackList = (moves, empty) => moves.length ? `<ul class="effect-list">${moves.map(m => `<li>${badge(m.type)} <span>${esc(m.label)}</span> <strong>${m.value === null ? '—' : factor(m.value)}</strong>${m.note ? `<small>${esc(m.note)}</small>` : ''}</li>`).join('')}</ul>` : `<p class="hint">${esc(empty)}</p>`;
 const stats = p => `<div class="stats">${[['hp','PS'],['attack','Atq'],['defense','Def'],['special-attack','At. Esp.'],['special-defense','Def. Esp.'],['speed','Vel']].map(([key,label]) => `<span>${label}<strong>${p.stats[key]}</strong></span>`).join('')}</div>`;
 const monHead = p => `<div class="mon-head">${sprite(p)}<div><h3>${esc(p.label)}</h3><div class="badges">${p.types.map(badge).join('')}</div></div></div>`;
 function render() {
@@ -50,17 +52,22 @@ function render() {
   $('choose-rival').textContent = rival ? 'Editar / cambiar' : 'Elegir rival';
   $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques revelados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
     const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} ${esc(m.label)}` : '+ Revelar ataque'}</button>`;
-  }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Cobertura incompleta: se mantiene una estimación por STAB.' : 'Cuatro ataques conocidos; revisá las mecánicas no calculadas.'}</p>` : '';
+  }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Faltan ataques por revelar.' : 'Cuatro ataques revelados.'}</p>` : '';
   document.querySelectorAll('[data-reveal]').forEach(b => b.addEventListener('click', () => openEditor('rival', Number(b.dataset.reveal))));
-  $('ranking').className = result.ranking.length ? 'ranking' : 'empty';
-  $('ranking').innerHTML = result.ranking.length ? result.ranking.map((r,i) => `<article class="match tier-${r.tier}">
-    <div class="match-head"><strong>${i+1}. ${esc(r.label)}</strong><span class="verdict">${['Presión baja','Presión media','Presión alta'][r.tier]}</span></div>
-    <p>${r.incoming ? `Amenaza: ${esc(r.incoming.move.label)} · índice ${r.danger.toFixed(2)}` : r.uncertain ? 'Aguante sin evaluar: mecánica desconocida.' : 'Sin daño rival calculable en este escenario.'}</p>
-    <p>${r.outgoing ? `Respuesta: ${esc(r.outgoing.move.label)} · índice ${r.reward.toFixed(2)}` : 'Sin respuesta ofensiva calculable.'}</p>
-    ${r.order ? `<p class="hint">${esc(r.order)} · orientativo</p>` : ''}
-    ${r.uncertain ? '<p class="caution">Hay ataques rivales no calculados: el riesgo puede ser mayor.</p>' : ''}
-    ${r.warnings.length ? `<details><summary>Efectos y límites (${r.warnings.length})</summary><ul>${r.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}
-  </article>`).join('') + (result.warnings.length ? `<details class="notes"><summary>Información rival incompleta / efectos</summary><ul>${result.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : '') : 'Cargá tu equipo y un rival para comparar.';
+  $('defensive-types').innerHTML = result.rival ? `<h3 class="minor">Debilidades y resistencias</h3><p class="hint">Por tipos, sin habilidades.</p><div class="defensive-groups">${result.defensiveTypes.map(g => `<div class="defensive-group"><strong>${g.value === 0 ? 'Inmune' : g.value > 1 ? 'Supereficaz' : g.value === 1 ? 'Normal' : 'Poco eficaz'} (${factor(g.value)})</strong><div class="badges">${g.types.map(badge).join('')}</div></div>`).join('')}</div>` : '';
+  $('ranking').className = result.matchups.length ? 'matchups' : 'empty';
+  $('ranking').innerHTML = result.matchups.length ? result.matchups.map(r => `<article class="match matchup">
+    <div class="match-head">${sprite(r)}<strong>${esc(r.label)}</strong></div>
+    <div class="pros-cons">
+      <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.')}</div>
+      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces reveladas.' : 'Sin ataques rivales revelados.')}</div>
+    </div>
+    <details><summary>Ver todos los ataques</summary>
+      <h3 class="minor">Tus ataques</h3>${attackList(r.outgoing, 'Sin movimientos cargados.')}
+      <h3 class="minor">Ataques del rival</h3>${attackList(r.incoming, 'Sin ataques revelados.')}
+      ${r.warnings.length ? `<p class="hint">${r.warnings.map(esc).join(' ')}</p>` : ''}
+    </details>
+  </article>`).join('') + (result.warnings.length ? `<p class="hint">${result.warnings.map(esc).join(' ')}</p>` : '') : 'Cargá tu equipo y un rival para comparar.';
   const c = result.coverage;
   $('coverage').className = 'coverage';
   $('coverage').innerHTML = team.length ? [

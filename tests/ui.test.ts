@@ -80,11 +80,15 @@ test('DOM + HTTP: create/edit team, reveal rival moves, errors, persistence and 
     click('#add'); input('#pokemon-input','Gastrodon'); await ready(); input('#move-0','Terremoto'); input('#item-input','Panuelo Eleccion'); await save();
     assert.match(d.querySelector('#team')!.textContent!,/Pañuelo Elección/);
     click('#choose-rival'); input('#pokemon-input','Jolteon'); await ready(); await save();
-    assert.match(d.querySelector('.match-head')!.textContent!,/Gastrodon/);
+    assert.match(d.querySelector('.match-head')!.textContent!,/Gyarados/);
+    assert.ok(!d.querySelector('#ranking')!.textContent!.includes('índice'));
+    assert.match(d.querySelector('#defensive-types')!.textContent!,/Debilidades y resistencias/);
     assert.equal(d.querySelectorAll('.match').length,2);
     click('[data-reveal="0"]'); await ready(); input('#move-0','thunderbolt'); await save();
     assert.match(d.querySelector('#revealed')!.textContent!,/Rayo/);
     assert.match(d.querySelector('#revealed')!.textContent!,/1 \/ 4/);
+    assert.match(d.querySelector('.match .cons')!.textContent!,/Rayo.*×4/);
+    assert.equal(d.querySelector('.match details')!.hasAttribute('open'),false);
     // Invalid move: failed candidate never replaces saved data.
     const stored = dom.window.localStorage.getItem('randomlocke.team.v1');
     click('[data-edit="0"]'); await ready(); input('#move-1','nonexistent'); click('#save');

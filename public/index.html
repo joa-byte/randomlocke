@@ -19,10 +19,11 @@
         <div class="section-head"><h2 id="rival-title">Rival</h2><button id="choose-rival" class="secondary">Elegir rival</button></div>
         <div id="rival" class="empty">Elegí a quién te enfrentás.</div>
         <div id="revealed"></div>
+        <div id="defensive-types"></div>
       </section>
       <section class="panel" aria-labelledby="rank-title">
-        <div class="section-head"><h2 id="rank-title">Mejor cambio</h2><span class="muted">Aguante → respuesta</span></div>
-        <p class="hint">Comparación con estadísticas base. No predice daño exacto ni supervivencia.</p>
+        <div class="section-head"><h2 id="rank-title">Pros y contras</h2></div>
+        <p class="hint">Solo ataques cargados y habilidades conocidas. Sin estimar ataques rivales.</p>
         <div id="ranking" aria-live="polite" class="empty">Cargá tu equipo y un rival para comparar.</div>
       </section>
     </div>
@@ -31,10 +32,9 @@
       <div id="coverage" class="coverage empty">Agregá un Pokémon para ver la cobertura.</div>
     </section>
     <details class="notes"><summary>Cómo leer los resultados</summary>
-      <p>Primero se ordena por presión recibida; después por respuesta y velocidad. Verde significa presión baja, amarillo media y rojo alta, incluso si todo el equipo queda del mismo color.</p>
-      <p>Índice de presión = potencia × ataque / defensa × STAB × efectividad × efectos / PS base. No es daño ni un porcentaje. Referencia neutral: 1,50; verde hasta 0,75 y rojo por encima de 2,25.</p>
-      <p>Mientras falten ataques, se conservan estimaciones STAB de potencia 80, físicas y especiales. La cobertura aleatoria desconocida puede cambiar por completo la recomendación.</p>
-      <p>Velocidad y prioridad orientan la respuesta posterior: cambiar de Pokémon consume tu acción. No se modelan clima, estados, críticos, precisión, retroceso, activaciones previas ni cambios específicos de Añil.</p>
+      <p>Las fichas mantienen el orden de tu equipo. Pros muestra tus ataques supereficaces; contras, los ataques revelados del rival que te son supereficaces. El desplegable incluye todos los ataques cargados.</p>
+      <p>La tabla bajo el rival muestra sus tipos defensivos. En las fichas se aplican inmunidades y modificadores de habilidades soportadas, señalados cuando cambian el multiplicador.</p>
+      <p>Los multiplicadores no son daño final: no incluyen potencia, estadísticas, STAB ni objetos. Los ataques de estado y las mecánicas de efectividad no soportadas se indican sin inventar un multiplicador.</p>
     </details>
   </main>
   <dialog id="editor" aria-labelledby="editor-title">

@@ -44,9 +44,10 @@ test('HTTP integration: analysis, validation, upstream failure and safe static r
     const p = {pokemon:'pikachu',ability:'static',item:null,moves:['thunderbolt']};
     const response = await post({team:[p],rival:{...p,ability:null,moves:[]}});
     assert.equal(response.status,200);
-    const data = await response.json(); assert.equal(data.ranking.length,1); assert.equal(data.coverage.length,18);
-    assert.equal(data.ranking[0].estimated,true);
-    assert.ok(data.warnings.includes('Habilidad rival desconocida.'));
+    const data = await response.json(); assert.equal(data.matchups.length,1); assert.equal(data.coverage.length,18);
+    assert.equal(data.matchups[0].incoming.length,0);
+    assert.equal(data.ranking,undefined);
+    assert.ok(data.warnings.some((w:string)=>w.startsWith('Habilidad rival desconocida')));
     assert.equal((await fetch(`${base}/api/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{'})).status,400);
     assert.equal((await fetch(`${base}/api/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:'x'.repeat(17000)})).status,413);
   } finally { server.closeAllConnections(); await new Promise<void>(resolve=>server.close(()=>resolve())); await rm(dir,{recursive:true}); }
