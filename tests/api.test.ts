@@ -40,7 +40,7 @@ test('API validates team, payload, slugs, abilities and duplicate moves', async 
     const p = await hydrate(client,valid); assert.equal(p.moves[0].label,'Rayo'); assert.equal(p.stats.attack,80);
     assert.deepEqual(p.moves[0].effects,['Puede aplicar parálisis (10%)']);
     assert.deepEqual((await client.move('quick-attack')).effects,['Prioridad +1']);
-    assert.deepEqual((await client.move('growl')).effects,['Ataque -1 nivel']);
+    assert.deepEqual((await client.move('growl')).effects,['Baja Ataque 1 nivel']);
   } finally { await rm(dir,{recursive:true}); }
 });
 test('HTTP integration: analysis, validation, upstream failure and safe static routing', async () => {
