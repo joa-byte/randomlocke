@@ -30,6 +30,29 @@ function persist() {
   try { localStorage.setItem(storageKey, JSON.stringify({version:1,team})); }
   catch { notice('El equipo funciona, pero el navegador no permitió guardarlo.'); }
 }
+function parseShowdownTeam(text) {
+  const blocks = text.replace(/\r/g, '').trim().split(/\n\s*\n/).filter(Boolean);
+  if (!blocks.length) throw new Error('Pegá un equipo exportado desde Pokémon Showdown.');
+  if (blocks.length > 6) throw new Error('El equipo importado tiene más de seis Pokémon.');
+  return blocks.map((block, index) => {
+    const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
+    const header = lines[0] ?? '';
+    const itemMatch = header.match(/^(.*?)\s+@\s+(.+)$/);
+    const rawName = (itemMatch ? itemMatch[1] : header).replace(/\s+\((?:M|F)\)\s*$/i, '').trim();
+    const speciesMatch = rawName.match(/^.*?\s+\(([^()]+)\)$/);
+    const pokemon = (speciesMatch?.[1] ?? rawName).trim();
+    const ability = lines.find(line => /^Ability:\s*/i.test(line))?.replace(/^Ability:\s*/i, '').trim() ?? '';
+    const moves = lines.filter(line => /^-\s+/.test(line)).map(line => line.replace(/^-\s+/, '').trim());
+    if (!pokemon) throw new Error(`No pude leer el Pokémon #${index + 1}.`);
+    if (!ability) throw new Error(`${pokemon}: falta la línea "Ability:".`);
+    if (moves.length > 4) throw new Error(`${pokemon}: tiene más de cuatro movimientos.`);
+    return {pokemon, ability, item:itemMatch?.[2]?.trim() || null, moves};
+  });
+}
+function importedAbility(pokemon, value) {
+  const wanted = normalizedName(value);
+  return pokemon.abilities.find(ability => normalizedName(ability.id) === wanted || normalizedName(ability.label) === wanted)?.id ?? null;
+}
 const factor = n => '×' + String(n).replace('.', ',');
 const attackList = (moves, empty, direction = null) => moves.length ? `<ul class="effect-list">${moves.map(m => `<li>${badge(m.type)} <span>${esc(m.label)}</span> <strong>${m.value === null ? '—' : factor(m.value)}</strong>
   <span class="move-category">${m.category === 'physical' ? 'Físico' : m.category === 'special' ? 'Especial' : 'Estado'}</span>
@@ -155,6 +178,49 @@ $('pokemon-input').addEventListener('input', () => { ++editEpoch; chosen = null;
 $('close').addEventListener('click', () => { ++editEpoch; $('editor').close(); });
 $('editor').addEventListener('cancel', event => { if (busy) event.preventDefault(); else ++editEpoch; });
 $('add').addEventListener('click', () => openEditor(null));
+$('import-team').addEventListener('click', () => {
+  if (busy) return;
+  $('import-error').textContent = '';
+  $('team-importer').showModal();
+  $('showdown-paste').focus();
+});
+$('close-import').addEventListener('click', () => $('team-importer').close());
+$('team-importer').addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+$('import-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (busy) return;
+  let imported;
+  try { imported = parseShowdownTeam($('showdown-paste').value); }
+  catch (e) { $('import-error').textContent = e.message; return; }
+  busy = true;
+  $('import-error').textContent = '';
+  document.querySelectorAll('#import-form textarea, #import-form button').forEach(el => { el.disabled = true; });
+  $('confirm-import').textContent = 'Importando…';
+  try {
+    await loadCatalogs();
+    const candidate = [];
+    for (const entry of imported) {
+      const pokemon = await api(`/api/pokemon/${resolveInput('pokemon',entry.pokemon)}`);
+      const ability = importedAbility(pokemon, entry.ability);
+      if (!ability) throw new Error(`${pokemon.label}: no encuentro la habilidad "${entry.ability}".`);
+      candidate.push({
+        pokemon:pokemon.id,
+        ability,
+        item:entry.item ? resolveInput('item',entry.item) : null,
+        moves:entry.moves.map(move => resolveInput('move',move)).filter(Boolean)
+      });
+    }
+    const next = await api('/api/analyze', {team:candidate,rival});
+    team = candidate; result = next;
+    persist(); render(); notice('');
+    $('import-form').reset(); $('team-importer').close();
+  } catch (e) { $('import-error').textContent = e.message; }
+  finally {
+    busy = false;
+    document.querySelectorAll('#import-form textarea, #import-form button').forEach(el => { el.disabled = false; });
+    $('confirm-import').textContent = 'Importar equipo';
+  }
+});
 $('choose-rival').addEventListener('click', () => openEditor('rival'));
 $('edit-form').addEventListener('submit', async event => {
   event.preventDefault();
