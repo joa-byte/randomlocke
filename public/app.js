@@ -6,14 +6,24 @@ const normalizedName = text => slug(text.normalize('NFD').replace(/\p{M}/gu, '')
 const badge = type => `<span class="type ${esc(type)}">${esc(names[type] ?? type)}</span>`;
 const sprite = p => p.sprite && /^https:\/\/raw\.(githubusercontent\.com|github\.com)\//.test(p.sprite) ? `<img class="sprite" src="${esc(p.sprite)}" alt="${esc(p.label)}" width="72" height="72">` : '<span class="no-sprite" aria-label="Sin sprite">?</span>';
 const storageKey = 'randomlocke.team.v1';
-let team = [], rival = null, result = null, editing = null, chosen = null, editEpoch = 0, loadingPokemon = false, catalogs = {};
+let team = [], enemyTeam = [], selectedEnemyIndex = null, rival = null, result = null, editing = null, chosen = null, editEpoch = 0, loadingPokemon = false, catalogs = {};
+let enemyProfiles = new Map();
+let importTarget = 'team';
 let storageWarning = '';
 let busy = false;
 const validSaved = s => s && typeof s.pokemon === 'string' && typeof s.ability === 'string' && (s.item === null || typeof s.item === 'string') && Array.isArray(s.moves) && s.moves.length <= 4 && s.moves.every(m => typeof m === 'string');
 try {
   const stored = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
-  if (stored && stored.version === 1 && Array.isArray(stored.team) && stored.team.length <= 6 && stored.team.every(validSaved)) team = stored.team;
-  else if (stored) storageWarning = 'El equipo guardado tiene un formato incompatible. No se borró.';
+  if (stored && stored.version === 1 && Array.isArray(stored.team) && stored.team.length <= 6 && stored.team.every(validSaved)) {
+    team = stored.team;
+    if (Array.isArray(stored.enemyTeam) && stored.enemyTeam.length <= 6 && stored.enemyTeam.every(validSaved)) {
+      enemyTeam = stored.enemyTeam;
+      if (Number.isInteger(stored.selectedEnemyIndex) && stored.selectedEnemyIndex >= 0 && stored.selectedEnemyIndex < enemyTeam.length) {
+        selectedEnemyIndex = stored.selectedEnemyIndex;
+        rival = enemyTeam[selectedEnemyIndex];
+      }
+    }
+  } else if (stored) storageWarning = 'El equipo guardado tiene un formato incompatible. No se borró.';
 } catch { storageWarning = 'No se pudo leer el equipo guardado. No se borró.'; }
 
 async function api(path, data) {
@@ -27,7 +37,7 @@ function notice(message, retry = false) {
   $('retry')?.addEventListener('click', () => start());
 }
 function persist() {
-  try { localStorage.setItem(storageKey, JSON.stringify({version:1,team})); }
+  try { localStorage.setItem(storageKey, JSON.stringify({version:1,team,enemyTeam,selectedEnemyIndex})); }
   catch { notice('El equipo funciona, pero el navegador no permitió guardarlo.'); }
 }
 function parseShowdownTeam(text) {
@@ -61,6 +71,22 @@ const attackList = (moves, empty, direction = null) => moves.length ? `<ul class
   ${m.note ? `<small>${esc(m.note)}</small>` : ''}</li>`).join('')}</ul>` : `<p class="hint">${esc(empty)}</p>`;
 const stats = p => `<div class="stats">${[['hp','PS'],['attack','Atq'],['defense','Def'],['special-attack','At. Esp.'],['special-defense','Def. Esp.'],['speed','Vel']].map(([key,label]) => `<span>${label}<strong>${p.stats[key]}</strong></span>`).join('')}</div>`;
 const monHead = p => `<div class="mon-head">${sprite(p)}<div><h3>${esc(p.label)}</h3><div class="badges">${p.types.map(badge).join('')}</div></div></div>`;
+const moveLabel = id => catalogs.move?.find(move => move.id === id)?.label ?? id;
+async function hydrateEnemyProfiles(entries = enemyTeam) {
+  const loaded = await Promise.all(entries.map(entry => api(`/api/pokemon/${entry.pokemon}`)));
+  enemyProfiles = new Map(loaded.map(profile => [profile.id, profile]));
+}
+async function selectEnemy(index) {
+  if (busy || index < 0 || index >= enemyTeam.length) return;
+  busy = true;
+  try {
+    const nextRival = enemyTeam[index];
+    const next = await api('/api/analyze', {team,rival:nextRival});
+    selectedEnemyIndex = index; rival = nextRival; result = next;
+    persist(); render(); notice('');
+  } catch (e) { notice(e.message, true); }
+  finally { busy = false; }
+}
 function render() {
   $('count').textContent = `${team.length} / 6`;
   $('add').disabled = team.length >= 6;
@@ -74,12 +100,25 @@ function render() {
   </article>`).join('') : '<div class="empty team-empty">Tu equipo empieza acá. Agregá hasta seis Pokémon con sus movimientos.</div>';
   document.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(Number(b.dataset.edit))));
   document.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', () => removeMember(Number(b.dataset.remove))));
+  $('enemy-count').textContent = `${enemyTeam.length} / 6`;
+  $('enemy-team').innerHTML = enemyTeam.length ? enemyTeam.map((entry,i) => {
+    const p = enemyProfiles.get(entry.pokemon);
+    if (!p) return '';
+    const selected = i === selectedEnemyIndex;
+    return `<button class="enemy-card${selected ? ' selected' : ''}" data-enemy-index="${i}" aria-pressed="${selected}" type="button">
+      <span class="enemy-card-head">${sprite(p)}<span><strong>${esc(p.label)}</strong><span class="badges">${p.types.map(badge).join('')}</span></span></span>
+      <span class="enemy-moves">${entry.moves.length ? entry.moves.map(move => `<span>${esc(moveLabel(move))}</span>`).join('') : '<span class="muted">Sin movimientos cargados</span>'}</span>
+      ${selected ? '<span class="enemy-selected-label">Rival activo</span>' : '<span class="enemy-select-label">Seleccionar rival</span>'}
+    </button>`;
+  }).join('') : '<div class="empty team-empty">Importá el equipo enemigo para elegir contra quién comparar.</div>';
+  document.querySelectorAll('[data-enemy-index]').forEach(b => b.addEventListener('click', () => selectEnemy(Number(b.dataset.enemyIndex))));
   $('rival').className = result.rival ? '' : 'empty';
   $('rival').innerHTML = result.rival ? monHead(result.rival) + stats(result.rival) : 'Elegí a quién te enfrentás.';
-  $('choose-rival').textContent = rival ? 'Editar / cambiar' : 'Elegir rival';
-  $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques revelados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
+  $('choose-rival').disabled = !rival;
+  $('choose-rival').textContent = rival ? 'Editar seleccionado' : 'Seleccioná un rival arriba';
+  $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques cargados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
     const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} ${esc(m.label)}` : '+ Revelar ataque'}</button>`;
-  }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Faltan ataques por revelar.' : 'Cuatro ataques revelados.'}</p>` : '';
+  }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Hay espacios de ataques vacíos.' : 'Cuatro ataques cargados.'}</p>` : '';
   document.querySelectorAll('[data-reveal]').forEach(b => b.addEventListener('click', () => openEditor('rival', Number(b.dataset.reveal))));
   $('defensive-types').innerHTML = result.rival ? `<h3 class="minor">Debilidades y resistencias</h3><p class="hint">Por tipos, sin habilidades.</p><div class="defensive-groups">${result.defensiveTypes.map(g => `<div class="defensive-group"><strong>${g.value === 0 ? 'Inmune' : g.value > 1 ? 'Supereficaz' : g.value === 1 ? 'Normal' : 'Poco eficaz'} (${factor(g.value)})</strong><div class="badges">${g.types.map(badge).join('')}</div></div>`).join('')}</div>` : '';
   $('ranking').className = result.matchups.length ? 'matchups' : 'empty';
@@ -88,12 +127,12 @@ function render() {
     <p class="hint base-speed">Velocidad base: tu Pokémon ${r.speed} · rival ${r.rivalSpeed}</p>
     <div class="pros-cons">
       <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.', 'outgoing')}</div>
-      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces reveladas.' : 'Sin ataques rivales revelados.', 'incoming')}</div>
+      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces cargadas.' : 'Sin ataques rivales cargados.', 'incoming')}</div>
     </div>
     <details><summary>Ver todos los ataques</summary>
       <p class="hint">Ataque y defensa base, sin modificadores.</p>
       <h3 class="minor">Tus ataques</h3>${attackList(r.outgoing, 'Sin movimientos cargados.', 'outgoing')}
-      <h3 class="minor">Ataques del rival</h3>${attackList(r.incoming, 'Sin ataques revelados.', 'incoming')}
+      <h3 class="minor">Ataques del rival</h3>${attackList(r.incoming, 'Sin ataques cargados.', 'incoming')}
       ${r.warnings.length ? `<p class="hint">${r.warnings.map(esc).join(' ')}</p>` : ''}
     </details>
   </article>`).join('') : 'Cargá tu equipo y un rival para comparar.';
@@ -178,12 +217,22 @@ $('pokemon-input').addEventListener('input', () => { ++editEpoch; chosen = null;
 $('close').addEventListener('click', () => { ++editEpoch; $('editor').close(); });
 $('editor').addEventListener('cancel', event => { if (busy) event.preventDefault(); else ++editEpoch; });
 $('add').addEventListener('click', () => openEditor(null));
-$('import-team').addEventListener('click', () => {
+function openImporter(target) {
   if (busy) return;
+  importTarget = target;
   $('import-error').textContent = '';
+  $('showdown-paste').value = '';
+  const enemy = target === 'enemy';
+  $('team-import-title').textContent = enemy ? 'Importar equipo enemigo' : 'Importar mi equipo';
+  $('import-label').textContent = enemy ? 'Equipo enemigo de Pokémon Showdown' : 'Mi equipo de Pokémon Showdown';
+  $('import-description').textContent = 'Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Nivel, EVs, naturaleza y Tera se ignoran.';
+  $('import-warning').textContent = enemy ? 'Al importar, se reemplaza el equipo enemigo actual y se limpia el rival activo.' : 'Al importar, se reemplaza tu equipo actual completo.';
+  $('confirm-import').textContent = enemy ? 'Importar equipo enemigo' : 'Importar mi equipo';
   $('team-importer').showModal();
   $('showdown-paste').focus();
-});
+}
+$('import-team').addEventListener('click', () => openImporter('team'));
+$('import-enemy-team').addEventListener('click', () => openImporter('enemy'));
 $('close-import').addEventListener('click', () => $('team-importer').close());
 $('team-importer').addEventListener('cancel', event => { if (busy) event.preventDefault(); });
 $('import-form').addEventListener('submit', async event => {
@@ -210,8 +259,17 @@ $('import-form').addEventListener('submit', async event => {
         moves:entry.moves.map(move => resolveInput('move',move)).filter(Boolean)
       });
     }
-    const next = await api('/api/analyze', {team:candidate,rival});
-    team = candidate; result = next;
+    if (importTarget === 'enemy') {
+      for (const member of candidate) await api('/api/analyze', {team,rival:member});
+      enemyTeam = candidate;
+      selectedEnemyIndex = null;
+      rival = null;
+      await hydrateEnemyProfiles(enemyTeam);
+      result = await api('/api/analyze', {team,rival:null});
+    } else {
+      result = await api('/api/analyze', {team:candidate,rival});
+      team = candidate;
+    }
     persist(); render(); notice('');
     $('import-form').reset(); $('team-importer').close();
   } catch (e) { $('import-error').textContent = e.message; }
@@ -221,14 +279,16 @@ $('import-form').addEventListener('submit', async event => {
     $('confirm-import').textContent = 'Importar equipo';
   }
 });
-$('choose-rival').addEventListener('click', () => openEditor('rival'));
+$('choose-rival').addEventListener('click', () => { if (rival) openEditor('rival'); });
 $('edit-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (!chosen || loadingPokemon || busy) return;
   const selection = {pokemon:chosen.id, ability:$('ability').value || null, item:resolveInput('item',$('item-input').value), moves:[...document.querySelectorAll('.move-input')].map(input => resolveInput('move',input.value)).filter(Boolean)};
   const nextTeam = [...team]; let nextRival = rival;
-  if (editing === 'rival') nextRival = selection;
-  else if (editing === null) nextTeam.push(selection);
+  if (editing === 'rival') {
+    nextRival = selection;
+    if (selectedEnemyIndex !== null) enemyTeam[selectedEnemyIndex] = selection;
+  } else if (editing === null) nextTeam.push(selection);
   else nextTeam[editing] = selection;
   busy = true;
   document.querySelectorAll('#edit-form input, #edit-form select, #edit-form button').forEach(el => { el.disabled = true; });
@@ -236,6 +296,7 @@ $('edit-form').addEventListener('submit', async event => {
   try {
     const next = await api('/api/analyze', {team:nextTeam,rival:nextRival});
     team = nextTeam; rival = nextRival; result = next;
+    if (editing === 'rival' && selectedEnemyIndex !== null && chosen) enemyProfiles.set(chosen.id, chosen);
     notice(''); persist(); render(); $('editor').close();
   } catch (e) { $('form-error').textContent = e.message; }
   finally {
@@ -248,6 +309,7 @@ async function start() {
   notice('Cargando catálogos…');
   try {
     await loadCatalogs();
+    if (enemyTeam.length) await hydrateEnemyProfiles();
     result = await api('/api/analyze', {team,rival}); render(); notice(storageWarning);
   } catch (e) { notice(e.message, true); }
 }
