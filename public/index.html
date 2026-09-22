@@ -14,9 +14,14 @@
       <div class="section-head"><h1 id="team-title">Mi equipo <span id="count">0 / 6</span></h1><div class="team-toolbar"><button id="import-team" class="secondary">Importar equipo</button><button id="add">+ Agregar Pokémon</button></div></div>
       <div id="team" class="team"></div>
     </section>
+    <section aria-labelledby="enemy-team-title" class="enemy-team-section">
+      <div class="section-head"><h2 id="enemy-team-title">Equipo enemigo <span id="enemy-count">0 / 6</span></h2><button id="import-enemy-team" class="secondary">Importar equipo enemigo</button></div>
+      <p class="hint">Importá el equipo completo y elegí qué Pokémon está activo haciendo clic en su ficha.</p>
+      <div id="enemy-team" class="enemy-team"></div>
+    </section>
     <div class="workspace">
       <section class="panel" aria-labelledby="rival-title">
-        <div class="section-head"><h2 id="rival-title">Rival</h2><button id="choose-rival" class="secondary">Elegir rival</button></div>
+        <div class="section-head"><h2 id="rival-title">Rival activo</h2><button id="choose-rival" class="secondary">Editar seleccionado</button></div>
         <div id="rival" class="empty">Elegí a quién te enfrentás.</div>
         <div id="revealed"></div>
         <div id="defensive-types"></div>
@@ -41,11 +46,11 @@
   <dialog id="team-importer" aria-labelledby="team-import-title">
     <form id="import-form">
       <div class="section-head"><h2 id="team-import-title">Importar equipo</h2><button type="button" id="close-import" class="secondary" aria-label="Cerrar importador">Cerrar</button></div>
-      <p class="hint">Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Nivel, EVs, naturaleza y Tera se ignoran.</p>
-      <label>Equipo de Pokémon Showdown
+      <p id="import-description" class="hint">Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Nivel, EVs, naturaleza y Tera se ignoran.</p>
+      <label><span id="import-label">Equipo de Pokémon Showdown</span>
         <textarea id="showdown-paste" rows="14" spellcheck="false" placeholder="paragua (Sandslash-Alola) (M) @ Salac Berry&#10;Ability: Sticky Hold&#10;Level: 50&#10;- Wake-Up Slap&#10;- Toxic&#10;- Avalanche&#10;- Milk Drink"></textarea>
       </label>
-      <p class="hint caution">Al importar, se reemplaza el equipo actual completo.</p>
+      <p id="import-warning" class="hint caution">Al importar, se reemplaza el equipo actual completo.</p>
       <p id="import-error" role="alert"></p>
       <button id="confirm-import" type="submit">Importar equipo</button>
     </form>
