@@ -64,6 +64,31 @@ test('DOM + HTTP: create/edit team, reveal rival moves, errors, persistence and 
     const ready = () => until(()=>!(d.querySelector('#save') as HTMLButtonElement).disabled,'Editor did not load');
     const save = async () => { click('#save'); await until(()=>!d.querySelector('#editor')?.hasAttribute('open'),'Editor failed to save: '+d.querySelector('#form-error')?.textContent); };
     assert.match(d.querySelector('#team')!.textContent!,/Agregá hasta seis/);
+    click('#import-team');
+    input('#showdown-paste', `serpiente (Gyarados) (M) @ Choice Band
+Ability: Intimidate
+Level: 50
+Tera Type: Water
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Surf
+- Ice Beam
+
+barro (Gastrodon) @ Choice Scarf
+Ability: Storm Drain
+Level: 50
+Tera Type: Ground
+- Earthquake`);
+    click('#confirm-import');
+    await until(()=>!d.querySelector('#team-importer')?.hasAttribute('open'),'Showdown import failed: '+d.querySelector('#import-error')?.textContent);
+    assert.equal(d.querySelector('#count')!.textContent,'2 / 6');
+    assert.match(d.querySelector('#team')!.textContent!,/Gyarados/);
+    assert.match(d.querySelector('#team')!.textContent!,/Gastrodon/);
+    assert.match(d.querySelector('#team')!.textContent!,/Cinta Elección/);
+    assert.match(d.querySelector('#team')!.textContent!,/Pañuelo Elección/);
+    assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('randomlocke.team.v1')!).team.map((p:{pokemon:string})=>p.pokemon),['gyarados','gastrodon']);
+    click('[data-remove="1"]'); await until(()=>d.querySelector('#count')!.textContent === '1 / 6','Imported removal failed');
+    click('[data-remove="0"]'); await until(()=>d.querySelector('#count')!.textContent === '0 / 6','Imported cleanup failed');
     const moveOptions = [...d.querySelectorAll<HTMLOptionElement>('#move-list option')].map(o=>o.value);
     const pokemonOptions = [...d.querySelectorAll<HTMLOptionElement>('#pokemon-list option')].map(o=>o.value);
     assert.ok(moveOptions.includes('Terremoto'));
