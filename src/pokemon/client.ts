@@ -5,6 +5,57 @@ import { TYPES, type Named, type Pokemon, type Move, type Type, type Stats } fro
 import { translated } from './locale.ts';
 
 type Resource = Record<string, any>;
+
+const statLabels: Record<string,string> = {
+  attack:'Ataque', defense:'Defensa', 'special-attack':'Ataque Especial',
+  'special-defense':'Defensa Especial', speed:'Velocidad', accuracy:'Precisión', evasion:'Evasión'
+};
+const ailmentLabels: Record<string,string> = {
+  burn:'Puede quemar', paralysis:'Puede paralizar', poison:'Puede envenenar',
+  'badly-poison':'Puede intoxicar', freeze:'Puede congelar', sleep:'Puede dormir',
+  confusion:'Puede confundir', infatuation:'Puede enamorar', trap:'Puede atrapar',
+  nightmare:'Puede causar pesadilla'
+};
+const chanceSuffix = (chance: number | null | undefined) => chance && chance < 100 ? ` (${chance}%)` : '';
+function moveEffects(m: Resource): string[] {
+  const effects: string[] = [];
+  if (m.priority) effects.push(`Prioridad ${m.priority > 0 ? '+' : ''}${m.priority}`);
+  const ailment = m.meta?.ailment?.name;
+  if (ailment && ailment !== 'none') {
+    const chance = m.meta?.ailment_chance || m.effect_chance;
+    effects.push(`${ailmentLabels[ailment] ?? `Puede causar ${title(ailment).toLowerCase()}`}${chanceSuffix(chance)}`);
+  }
+  for (const change of m.stat_changes ?? []) {
+    const amount = Number(change.change ?? 0);
+    if (!amount) continue;
+    const label = statLabels[change.stat?.name] ?? title(change.stat?.name ?? 'estadística');
+    const chance = m.meta?.stat_chance || m.effect_chance;
+    effects.push(`${label} ${amount > 0 ? '+' : ''}${amount} nivel${Math.abs(amount) === 1 ? '' : 'es'}${chanceSuffix(chance)}`);
+  }
+  const flinch = Number(m.meta?.flinch_chance ?? 0);
+  if (flinch > 0) effects.push(`Puede causar retroceso${chanceSuffix(flinch)}`);
+  const drain = Number(m.meta?.drain ?? 0);
+  if (drain > 0) effects.push(`Recupera ${drain}% del daño causado`);
+  if (drain < 0) effects.push(`Retroceso: ${Math.abs(drain)}% del daño causado`);
+  const healing = Number(m.meta?.healing ?? 0);
+  if (healing > 0) effects.push(`Recupera ${healing}% de los PS máximos`);
+  const critRate = Number(m.meta?.crit_rate ?? 0);
+  if (critRate > 0) effects.push(`Crítico +${critRate} nivel${critRate === 1 ? '' : 'es'}`);
+  const minHits = m.meta?.min_hits, maxHits = m.meta?.max_hits;
+  if (minHits && maxHits && maxHits > 1) effects.push(minHits === maxHits ? `Golpea ${minHits} veces` : `Golpea ${minHits}–${maxHits} veces`);
+  const minTurns = m.meta?.min_turns, maxTurns = m.meta?.max_turns;
+  if (minTurns && maxTurns && maxTurns > 1) effects.push(minTurns === maxTurns ? `Dura ${minTurns} turnos` : `Dura ${minTurns}–${maxTurns} turnos`);
+  return [...new Set(effects)];
+}
+function localizedEffect(m: Resource): string | null {
+  const entry = m.effect_entries?.find((e: Resource) => e.language?.name === 'es');
+  if (!entry?.short_effect) return null;
+  return String(entry.short_effect)
+    .replace(/\$effect_chance/g, String(m.effect_chance ?? ''))
+    .replace(/\[([^\]]+)\]\{[^}]+\}/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status = 502) { super(message); this.status = status; }
@@ -67,8 +118,10 @@ export class PokeClient {
     // Exclude mechanics where generic power * attack / defense is misleading.
     const exceptions = ['psyshock','psystrike','secret-sword','foul-play','body-press','flying-press','freeze-dry','weather-ball','terrain-pulse','judgment','multi-attack','techno-blast','revelation-dance','photon-geyser','light-that-burns-the-sky','shell-side-arm','tera-blast','terastar-storm','acrobatics','facade','hex','venoshock','brine','revenge','avalanche','payback','pursuit','assurance','retaliate','stomping-tantrum','lash-out','bolt-beak','fishious-rend','electro-ball','gyro-ball','eruption','water-spout','dragon-energy','flail','reversal','stored-power','power-trip','rage-fist','last-respects','knock-off','expanding-force','rising-voltage','grassy-glide','focus-punch','sucker-punch','beak-blast','shell-trap','future-sight','doom-desire'];
     const special = exceptions.includes(m.name) || m.meta?.min_hits > 1 || m.meta?.min_turns > 1;
+    const effects = moveEffects(m);
+    const effectNote = (special || effects.length === 0 || m.damage_class.name === 'status') ? localizedEffect(m) : null;
     return {id: m.name, label: localized(m, 'move'), type: m.type.name as Type, category: m.damage_class.name,
-      power: m.power, priority: m.priority, accuracy: m.accuracy,
+      power: m.power, priority: m.priority, accuracy: m.accuracy, effects, effectNote,
       unsupported: special || !TYPES.includes(m.type.name)};
   }
 }
