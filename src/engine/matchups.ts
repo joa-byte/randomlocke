@@ -28,7 +28,7 @@ export function attackEffect(move: Move, attacker: Member, defender: Member) {
     defense: defender.stats[physical ? 'defense' : 'special-defense']
   };
   return {id: move.id, label: move.label, type: move.type, value, note,
-    category:move.category, power:move.power, stab, comparison};
+    category:move.category, power:move.power, stab, comparison, effects:move.effects, effectNote:move.effectNote};
 }
 export function matchupWarnings(member: Member) {
   return member.ability && !SUPPORTED_ABILITIES.includes(member.ability)
