@@ -16,8 +16,8 @@ const species: Record<string,Pokemon> = {
 const moves: Record<string,Move> = {
   surf: move('water','special',90,{id:'surf',label:'Surf'}),
   earthquake: move('ground','physical',100,{id:'earthquake',label:'Terremoto'}),
-  thunderbolt: move('electric','special',90,{id:'thunderbolt',label:'Rayo'}),
-  'ice-beam': move('ice','special',90,{id:'ice-beam',label:'Rayo hielo'})
+  thunderbolt: move('electric','special',90,{id:'thunderbolt',label:'Rayo',effects:['Puede aplicar parálisis (10%)']}),
+  'ice-beam': move('ice','special',90,{id:'ice-beam',label:'Rayo hielo',effects:['Puede aplicar congelación (10%)']})
 };
 class FakeClient extends PokeClient {
   override async catalog(kind: string): Promise<Named[]> {
@@ -117,6 +117,7 @@ Ability: Intimidate
     await until(()=>!d.querySelector('#team-importer')?.hasAttribute('open'),'Enemy import failed: '+d.querySelector('#import-error')?.textContent);
     assert.equal(d.querySelector('#enemy-count')!.textContent,'2 / 6');
     assert.equal(d.querySelectorAll('[data-enemy-index]').length,2);
+    assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Puede aplicar parálisis \(10%\)/);
     assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,true);
     click('[data-enemy-index="0"]');
     await until(()=>!(d.querySelector('#choose-rival') as HTMLButtonElement).disabled,'Enemy selection failed');
@@ -128,8 +129,10 @@ Ability: Intimidate
     assert.equal(d.querySelectorAll('.match').length,2);
     click('[data-reveal="0"]'); await ready(); input('#move-0','thunderbolt'); await save();
     assert.match(d.querySelector('#revealed')!.textContent!,/Rayo/);
+    assert.match(d.querySelector('#revealed')!.textContent!,/Puede aplicar parálisis \(10%\)/);
     assert.match(d.querySelector('#revealed')!.textContent!,/1 \/ 4/);
     assert.match(d.querySelector('.match .cons')!.textContent!,/Rayo.*×4/);
+    assert.match(d.querySelector('.match .cons')!.textContent!,/Puede aplicar parálisis \(10%\)/);
     assert.match(d.querySelector('.match .cons .stab')!.textContent!,/STAB ×1,5/);
     assert.match(d.querySelector('.match .cons .attack-stats')!.textContent!,/Rival At. Esp. 80 \/ Tu Def. Esp. 80/);
     assert.equal(d.querySelector('.match .cons .attack-stats')!.closest('details'),null);
@@ -145,6 +148,7 @@ Ability: Intimidate
     assert.ok(d.querySelector('#editor')!.hasAttribute('open'));
     input('#move-1','Rayo hielo'); await ready(); await save();
     assert.match(d.querySelector('#team')!.textContent!,/Rayo hielo/);
+    assert.match(d.querySelector('#team')!.textContent!,/Puede aplicar congelación \(10%\)/);
     // Editing the active rival updates that member inside the imported enemy team.
     click('#choose-rival'); await ready(); input('#pokemon-input','Gyarados'); await ready();
     assert.equal((d.querySelector('#move-0') as HTMLInputElement).value,'');

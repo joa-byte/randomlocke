@@ -70,6 +70,10 @@ h3 { font-size: 1rem; line-height: 1.5; }
 .enemy-card .type { font-size: .625rem; padding: 0 5px; }
 .enemy-moves { display: grid; gap: 4px; font-size: .75rem; color: var(--muted); }
 .enemy-moves > span { overflow-wrap: anywhere; }
+.enemy-move { display: block; padding-top: 4px; border-top: 1px dashed #c6cec4; }
+.enemy-move:first-child { border-top: 0; padding-top: 0; }
+.enemy-move strong { display: block; font-size: .75rem; color: var(--ink); }
+.enemy-move .move-effects { font-size: .6875rem; }
 .enemy-selected-label, .enemy-select-label { margin-top: auto; padding-top: 6px; border-top: 1px dashed #a7b4aa; font: bold .7rem var(--pixel-font); }
 .enemy-selected-label { color: #7d2633; }
 .enemy-select-label { color: var(--muted); }
@@ -138,6 +142,8 @@ h3 { font-size: 1rem; line-height: 1.5; }
 .moves > div { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px dashed #a7b4aa; }
 .moves > div > span:not(.type) { min-width: 0; overflow-wrap: anywhere; }
 .moves small { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.move-effects { flex-basis: 100%; display: block; color: #6a4a2d; font-size: .75rem; line-height: 1.45; margin-top: 2px; }
+.moves .move-effects { margin-left: 0; }
 .card-actions { display: flex; gap: 8px; margin-top: 14px; }
 button {
   font-size: .875rem;
@@ -164,6 +170,7 @@ button.quiet { background: #fff3e5; border-color: #be8b7b; color: #913342; margi
 .revealed { display: grid; gap: 10px; margin-top: 12px; }
 .move-slot { text-align: left; min-height: 46px; }
 .move-slot .type { margin-right: 6px; }
+.move-slot .move-effects { margin-top: 5px; color: #67523f; }
 .ranking { display: grid; gap: 12px; }
 .match { padding: 14px; border: 2px solid #809188; border-left: 7px solid; border-radius: 0; background: #fffef8; box-shadow: inset 0 0 0 2px #fff; }
 .tier-0 { border-left-color: #2c7750; background: #ecf6e9; }
@@ -232,6 +239,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .effect-list li { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: .875rem; }
 .effect-list strong { white-space: nowrap; }
 .effect-list .stab { color: #800020; font-weight: 800; }
+.effect-list .move-effects { flex-basis: 100%; }
 .move-category { color: var(--muted); font-size: .8125rem; }
 .attack-stats { line-height: 1.6; }
 .effect-list small { flex-basis: 100%; color: var(--muted); }
