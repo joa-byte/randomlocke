@@ -120,7 +120,8 @@ export class PokeClient {
     const exceptions = ['psyshock','psystrike','secret-sword','foul-play','body-press','flying-press','freeze-dry','weather-ball','terrain-pulse','judgment','multi-attack','techno-blast','revelation-dance','photon-geyser','light-that-burns-the-sky','shell-side-arm','tera-blast','terastar-storm','acrobatics','facade','hex','venoshock','brine','revenge','avalanche','payback','pursuit','assurance','retaliate','stomping-tantrum','lash-out','bolt-beak','fishious-rend','electro-ball','gyro-ball','eruption','water-spout','dragon-energy','flail','reversal','stored-power','power-trip','rage-fist','last-respects','knock-off','expanding-force','rising-voltage','grassy-glide','focus-punch','sucker-punch','beak-blast','shell-trap','future-sight','doom-desire'];
     const special = exceptions.includes(m.name) || m.meta?.min_hits > 1 || m.meta?.min_turns > 1;
     const effects = moveEffects(m);
-    const effectNote = (special || effects.length === 0 || m.damage_class.name === 'status') ? localizedEffect(m) : null;
+    const metaCategory = m.meta?.category?.name;
+    const effectNote = (special || (effects.length === 0 && (m.damage_class.name === 'status' || (metaCategory && metaCategory !== 'damage')))) ? localizedEffect(m) : null;
     return {id: m.name, label: localized(m, 'move'), type: m.type.name as Type, category: m.damage_class.name,
       power: m.power, priority: m.priority, accuracy: m.accuracy, effects, effectNote,
       unsupported: special || !TYPES.includes(m.type.name)};
