@@ -117,7 +117,7 @@ function render() {
   $('choose-rival').disabled = !rival;
   $('choose-rival').textContent = rival ? 'Editar seleccionado' : 'Seleccioná un rival arriba';
   $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques cargados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
-    const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} ${esc(m.label)}` : '+ Revelar ataque'}</button>`;
+    const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} ${esc(m.label)}` : '+ Agregar ataque'}</button>`;
   }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Hay espacios de ataques vacíos.' : 'Cuatro ataques cargados.'}</p>` : '';
   document.querySelectorAll('[data-reveal]').forEach(b => b.addEventListener('click', () => openEditor('rival', Number(b.dataset.reveal))));
   $('defensive-types').innerHTML = result.rival ? `<h3 class="minor">Debilidades y resistencias</h3><p class="hint">Por tipos, sin habilidades.</p><div class="defensive-groups">${result.defensiveTypes.map(g => `<div class="defensive-group"><strong>${g.value === 0 ? 'Inmune' : g.value > 1 ? 'Supereficaz' : g.value === 1 ? 'Normal' : 'Poco eficaz'} (${factor(g.value)})</strong><div class="badges">${g.types.map(badge).join('')}</div></div>`).join('')}</div>` : '';
@@ -191,8 +191,8 @@ async function openEditor(target, focusMove = null) {
   if (busy) return;
   editing = target; chosen = null; ++editEpoch;
   $('edit-form').reset(); $('form-error').textContent = ''; $('pokemon-preview').textContent = '';
-  $('editor-title').textContent = target === 'rival' ? 'Rival y ataques revelados' : target === null ? 'Agregar Pokémon' : 'Editar Pokémon';
-  $('moves-title').textContent = target === 'rival' ? 'Ataques revelados' : 'Movimientos';
+  $('editor-title').textContent = target === 'rival' ? 'Editar rival activo' : target === null ? 'Agregar Pokémon' : 'Editar Pokémon';
+  $('moves-title').textContent = target === 'rival' ? 'Ataques del rival' : 'Movimientos';
   $('ability').innerHTML = '<option value="">Elegí primero un Pokémon</option>';
   $('save').disabled = true; setMoveFields(); $('editor').showModal();
   const selection = target === 'rival' ? rival : target === null ? null : team[target];
