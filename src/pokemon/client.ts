@@ -31,7 +31,7 @@ function moveEffects(m: Resource): string[] {
     if (!amount) continue;
     const label = statLabels[change.stat?.name] ?? title(change.stat?.name ?? 'estadística');
     const chance = m.meta?.stat_chance || m.effect_chance;
-    effects.push(`${label} ${amount > 0 ? '+' : ''}${amount} nivel${Math.abs(amount) === 1 ? '' : 'es'}${chanceSuffix(chance)}`);
+    effects.push(`${amount > 0 ? 'Sube' : 'Baja'} ${label} ${Math.abs(amount)} nivel${Math.abs(amount) === 1 ? '' : 'es'}${chanceSuffix(chance)}`);
   }
   const flinch = Number(m.meta?.flinch_chance ?? 0);
   if (flinch > 0) effects.push(`Puede causar retroceso${chanceSuffix(flinch)}`);
