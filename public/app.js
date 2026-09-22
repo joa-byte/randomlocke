@@ -284,10 +284,10 @@ $('edit-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (!chosen || loadingPokemon || busy) return;
   const selection = {pokemon:chosen.id, ability:$('ability').value || null, item:resolveInput('item',$('item-input').value), moves:[...document.querySelectorAll('.move-input')].map(input => resolveInput('move',input.value)).filter(Boolean)};
-  const nextTeam = [...team]; let nextRival = rival;
+  const nextTeam = [...team]; const nextEnemyTeam = [...enemyTeam]; let nextRival = rival;
   if (editing === 'rival') {
     nextRival = selection;
-    if (selectedEnemyIndex !== null) enemyTeam[selectedEnemyIndex] = selection;
+    if (selectedEnemyIndex !== null) nextEnemyTeam[selectedEnemyIndex] = selection;
   } else if (editing === null) nextTeam.push(selection);
   else nextTeam[editing] = selection;
   busy = true;
@@ -295,7 +295,7 @@ $('edit-form').addEventListener('submit', async event => {
   $('save').textContent = 'Calculando…'; $('form-error').textContent = '';
   try {
     const next = await api('/api/analyze', {team:nextTeam,rival:nextRival});
-    team = nextTeam; rival = nextRival; result = next;
+    team = nextTeam; enemyTeam = nextEnemyTeam; rival = nextRival; result = next;
     if (editing === 'rival' && selectedEnemyIndex !== null && chosen) enemyProfiles.set(chosen.id, chosen);
     notice(''); persist(); render(); $('editor').close();
   } catch (e) { $('form-error').textContent = e.message; }
