@@ -11,10 +11,10 @@ const statLabels: Record<string,string> = {
   'special-defense':'Defensa Especial', speed:'Velocidad', accuracy:'Precisión', evasion:'Evasión'
 };
 const ailmentLabels: Record<string,string> = {
-  burn:'Puede quemar', paralysis:'Puede paralizar', poison:'Puede envenenar',
-  'badly-poison':'Puede intoxicar', freeze:'Puede congelar', sleep:'Puede dormir',
-  confusion:'Puede confundir', infatuation:'Puede enamorar', trap:'Puede atrapar',
-  nightmare:'Puede causar pesadilla'
+  burn:'quemadura', paralysis:'parálisis', poison:'envenenamiento',
+  'badly-poison':'envenenamiento grave', freeze:'congelación', sleep:'sueño',
+  confusion:'confusión', infatuation:'enamoramiento', trap:'atrapamiento',
+  nightmare:'pesadilla'
 };
 const chanceSuffix = (chance: number | null | undefined) => chance && chance < 100 ? ` (${chance}%)` : '';
 function moveEffects(m: Resource): string[] {
@@ -23,7 +23,8 @@ function moveEffects(m: Resource): string[] {
   const ailment = m.meta?.ailment?.name;
   if (ailment && ailment !== 'none') {
     const chance = m.meta?.ailment_chance || m.effect_chance;
-    effects.push(`${ailmentLabels[ailment] ?? `Puede causar ${title(ailment).toLowerCase()}`}${chanceSuffix(chance)}`);
+    const label = ailmentLabels[ailment] ?? title(ailment).toLowerCase();
+    effects.push(chance && chance < 100 ? `Puede aplicar ${label} (${chance}%)` : `Aplica ${label}`);
   }
   for (const change of m.stat_changes ?? []) {
     const amount = Number(change.change ?? 0);
