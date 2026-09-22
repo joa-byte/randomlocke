@@ -11,7 +11,7 @@
   <main>
     <div id="notice" role="status" aria-live="polite"></div>
     <section aria-labelledby="team-title">
-      <div class="section-head"><h1 id="team-title">Mi equipo <span id="count">0 / 6</span></h1><button id="add">+ Agregar Pokémon</button></div>
+      <div class="section-head"><h1 id="team-title">Mi equipo <span id="count">0 / 6</span></h1><div class="team-toolbar"><button id="import-team" class="secondary">Importar equipo</button><button id="add">+ Agregar Pokémon</button></div></div>
       <div id="team" class="team"></div>
     </section>
     <div class="workspace">
@@ -38,6 +38,18 @@
       <p>Debajo de cada ataque se muestran potencia base y Ataque/Defensa o Ataque Especial/Defensa Especial, según la categoría. Son estadísticas base, sin objetos ni modificadores. La velocidad base es una referencia, no asegura quién actúa primero.</p>
     </details>
   </main>
+  <dialog id="team-importer" aria-labelledby="team-import-title">
+    <form id="import-form">
+      <div class="section-head"><h2 id="team-import-title">Importar equipo</h2><button type="button" id="close-import" class="secondary" aria-label="Cerrar importador">Cerrar</button></div>
+      <p class="hint">Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Nivel, EVs, naturaleza y Tera se ignoran.</p>
+      <label>Equipo de Pokémon Showdown
+        <textarea id="showdown-paste" rows="14" spellcheck="false" placeholder="paragua (Sandslash-Alola) (M) @ Salac Berry&#10;Ability: Sticky Hold&#10;Level: 50&#10;- Wake-Up Slap&#10;- Toxic&#10;- Avalanche&#10;- Milk Drink"></textarea>
+      </label>
+      <p class="hint caution">Al importar, se reemplaza el equipo actual completo.</p>
+      <p id="import-error" role="alert"></p>
+      <button id="confirm-import" type="submit">Importar equipo</button>
+    </form>
+  </dialog>
   <dialog id="editor" aria-labelledby="editor-title">
     <form id="edit-form">
       <div class="section-head"><h2 id="editor-title">Agregar Pokémon</h2><button type="button" id="close" class="secondary" aria-label="Cerrar editor">Cerrar</button></div>
