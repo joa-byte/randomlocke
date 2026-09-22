@@ -7,7 +7,7 @@ const badge = type => `<span class="type ${esc(type)}">${esc(names[type] ?? type
 const sprite = p => p.sprite && /^https:\/\/raw\.(githubusercontent\.com|github\.com)\//.test(p.sprite) ? `<img class="sprite" src="${esc(p.sprite)}" alt="${esc(p.label)}" width="72" height="72">` : '<span class="no-sprite" aria-label="Sin sprite">?</span>';
 const storageKey = 'randomlocke.team.v1';
 let team = [], enemyTeam = [], selectedEnemyIndex = null, rival = null, result = null, editing = null, chosen = null, editEpoch = 0, loadingPokemon = false, catalogs = {};
-let enemyProfiles = new Map();
+let enemyProfiles = new Map(), enemyMoves = new Map();
 let importTarget = 'team';
 let storageWarning = '';
 let busy = false;
@@ -64,10 +64,13 @@ function importedAbility(pokemon, value) {
   return pokemon.abilities.find(ability => normalizedName(ability.id) === wanted || normalizedName(ability.label) === wanted)?.id ?? null;
 }
 const factor = n => '×' + String(n).replace('.', ',');
+const moveEffectText = m => [...(m.effects ?? []), ...(m.effectNote && !(m.effects ?? []).includes(m.effectNote) ? [m.effectNote] : [])];
+const moveEffectsHtml = m => { const effects = moveEffectText(m); return effects.length ? `<span class="move-effects">${effects.map(esc).join(' · ')}</span>` : ''; };
 const attackList = (moves, empty, direction = null) => moves.length ? `<ul class="effect-list">${moves.map(m => `<li>${badge(m.type)} <span>${esc(m.label)}</span> <strong>${m.value === null ? '—' : factor(m.value)}</strong>
   <span class="move-category">${m.category === 'physical' ? 'Físico' : m.category === 'special' ? 'Especial' : 'Estado'}</span>
   ${m.stab > 1 ? `<strong class="stab" title="Bonificación por coincidir con un tipo del atacante${m.stab === 2 ? '; Adaptable' : ''}">STAB ${factor(m.stab)}</strong>` : ''}
   ${direction && m.category !== 'status' ? `<small class="attack-stats">Potencia base ${m.power ?? 'variable'} · ${m.comparison ? `${direction === 'outgoing' ? 'Tu' : 'Rival'} ${m.comparison.attackLabel} ${m.comparison.attack} / ${direction === 'outgoing' ? 'Rival' : 'Tu'} ${m.comparison.defenseLabel} ${m.comparison.defense}` : 'Estadísticas especiales: sin comparar'}${m.stab === null ? ' · STAB sin calcular' : ''}</small>` : ''}
+  ${moveEffectsHtml(m)}
   ${m.note ? `<small>${esc(m.note)}</small>` : ''}</li>`).join('')}</ul>` : `<p class="hint">${esc(empty)}</p>`;
 const stats = p => `<div class="stats">${[['hp','PS'],['attack','Atq'],['defense','Def'],['special-attack','At. Esp.'],['special-defense','Def. Esp.'],['speed','Vel']].map(([key,label]) => `<span>${label}<strong>${p.stats[key]}</strong></span>`).join('')}</div>`;
 const monHead = p => `<div class="mon-head">${sprite(p)}<div><h3>${esc(p.label)}</h3><div class="badges">${p.types.map(badge).join('')}</div></div></div>`;
@@ -75,6 +78,9 @@ const moveLabel = id => catalogs.move?.find(move => move.id === id)?.label ?? id
 async function hydrateEnemyProfiles(entries = enemyTeam) {
   const loaded = await Promise.all(entries.map(entry => api(`/api/pokemon/${entry.pokemon}`)));
   enemyProfiles = new Map(loaded.map(profile => [profile.id, profile]));
+  const ids = [...new Set(entries.flatMap(entry => entry.moves))];
+  const moves = await Promise.all(ids.map(id => api(`/api/move/${id}`)));
+  enemyMoves = new Map(moves.map(move => [move.id, move]));
 }
 async function selectEnemy(index) {
   if (busy || index < 0 || index >= enemyTeam.length) return;
@@ -83,6 +89,7 @@ async function selectEnemy(index) {
     const nextRival = enemyTeam[index];
     const next = await api('/api/analyze', {team,rival:nextRival});
     selectedEnemyIndex = index; rival = nextRival; result = next;
+    for (const move of next.rival?.moves ?? []) enemyMoves.set(move.id, move);
     persist(); render(); notice('');
   } catch (e) { notice(e.message, true); }
   finally { busy = false; }
@@ -94,7 +101,7 @@ function render() {
   $('team').innerHTML = result.team.length ? result.team.map((p,i) => `<article class="card">
     ${monHead(p)}${stats(p)}
     <p class="equipment">${esc(p.abilities.find(a => a.id === p.ability)?.label)} · ${esc(p.item ? catalogs.item?.find(item => item.id === p.item)?.label ?? p.item : 'Sin objeto')}</p>
-    <div class="moves">${p.moves.length ? p.moves.map(m => `<div>${badge(m.type)} <span>${esc(m.label)}</span><small>${m.category === 'physical' ? 'Fís.' : m.category === 'special' ? 'Esp.' : 'Estado'}${m.power ? ` · ${m.power}` : ''}</small></div>`).join('') : '<p class="muted">Sin movimientos cargados</p>'}</div>
+    <div class="moves">${p.moves.length ? p.moves.map(m => `<div>${badge(m.type)} <span>${esc(m.label)}</span><small>${m.category === 'physical' ? 'Fís.' : m.category === 'special' ? 'Esp.' : 'Estado'}${m.power ? ` · ${m.power}` : ''}</small>${moveEffectsHtml(m)}</div>`).join('') : '<p class="muted">Sin movimientos cargados</p>'}</div>
     ${p.warnings?.length ? `<details><summary>Efectos y límites</summary><ul>${p.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}
     <div class="card-actions"><button class="secondary" data-edit="${i}">Editar</button><button class="quiet" data-remove="${i}" aria-label="Quitar ${esc(p.label)}">Quitar</button></div>
   </article>`).join('') : '<div class="empty team-empty">Tu equipo empieza acá. Agregá hasta seis Pokémon con sus movimientos.</div>';
@@ -107,7 +114,7 @@ function render() {
     const selected = i === selectedEnemyIndex;
     return `<button class="enemy-card${selected ? ' selected' : ''}" data-enemy-index="${i}" aria-pressed="${selected}" type="button">
       <span class="enemy-card-head">${sprite(p)}<span><strong>${esc(p.label)}</strong><span class="badges">${p.types.map(badge).join('')}</span></span></span>
-      <span class="enemy-moves">${entry.moves.length ? entry.moves.map(move => `<span>${esc(moveLabel(move))}</span>`).join('') : '<span class="muted">Sin movimientos cargados</span>'}</span>
+      <span class="enemy-moves">${entry.moves.length ? entry.moves.map(id => { const move = enemyMoves.get(id); return `<span class="enemy-move"><strong>${esc(move?.label ?? moveLabel(id))}</strong>${move ? moveEffectsHtml(move) : ''}</span>`; }).join('') : '<span class="muted">Sin movimientos cargados</span>'}</span>
       ${selected ? '<span class="enemy-selected-label">Rival activo</span>' : '<span class="enemy-select-label">Seleccionar rival</span>'}
     </button>`;
   }).join('') : '<div class="empty team-empty">Importá el equipo enemigo para elegir contra quién comparar.</div>';
@@ -117,7 +124,7 @@ function render() {
   $('choose-rival').disabled = !rival;
   $('choose-rival').textContent = rival ? 'Editar seleccionado' : 'Seleccioná un rival arriba';
   $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques cargados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
-    const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} ${esc(m.label)}` : '+ Agregar ataque'}</button>`;
+    const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} <span>${esc(m.label)}</span>${moveEffectsHtml(m)}` : '+ Agregar ataque'}</button>`;
   }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Hay espacios de ataques vacíos.' : 'Cuatro ataques cargados.'}</p>` : '';
   document.querySelectorAll('[data-reveal]').forEach(b => b.addEventListener('click', () => openEditor('rival', Number(b.dataset.reveal))));
   $('defensive-types').innerHTML = result.rival ? `<h3 class="minor">Debilidades y resistencias</h3><p class="hint">Por tipos, sin habilidades.</p><div class="defensive-groups">${result.defensiveTypes.map(g => `<div class="defensive-group"><strong>${g.value === 0 ? 'Inmune' : g.value > 1 ? 'Supereficaz' : g.value === 1 ? 'Normal' : 'Poco eficaz'} (${factor(g.value)})</strong><div class="badges">${g.types.map(badge).join('')}</div></div>`).join('')}</div>` : '';
@@ -166,7 +173,7 @@ function setMoveFields(moves = []) {
       if (!value.trim()) return;
       try {
         const m = await api(`/api/move/${resolveInput('move',value)}`);
-        if (epoch === editEpoch && input.value === value) $(`move-detail-${i}`).textContent = `${m.label} · ${names[m.type]} · ${m.category === 'physical' ? 'Físico' : m.category === 'special' ? 'Especial' : 'Estado'}${m.unsupported ? ' · No calculado' : ''}`;
+        if (epoch === editEpoch && input.value === value) { const effects = moveEffectText(m); $(`move-detail-${i}`).textContent = `${m.label} · ${names[m.type]} · ${m.category === 'physical' ? 'Físico' : m.category === 'special' ? 'Especial' : 'Estado'}${effects.length ? ` · ${effects.join(' · ')}` : ''}${m.unsupported ? ' · Daño especial no calculado' : ''}`; }
       } catch (e) { if (epoch === editEpoch && input.value === value) $(`move-detail-${i}`).textContent = e.message; }
     });
   });
@@ -296,7 +303,10 @@ $('edit-form').addEventListener('submit', async event => {
   try {
     const next = await api('/api/analyze', {team:nextTeam,rival:nextRival});
     team = nextTeam; enemyTeam = nextEnemyTeam; rival = nextRival; result = next;
-    if (editing === 'rival' && selectedEnemyIndex !== null && chosen) enemyProfiles.set(chosen.id, chosen);
+    if (editing === 'rival' && selectedEnemyIndex !== null && chosen) {
+      enemyProfiles.set(chosen.id, chosen);
+      for (const move of next.rival?.moves ?? []) enemyMoves.set(move.id, move);
+    }
     notice(''); persist(); render(); $('editor').close();
   } catch (e) { $('form-error').textContent = e.message; }
   finally {
