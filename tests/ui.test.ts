@@ -104,7 +104,24 @@ Tera Type: Ground
     assert.match(d.querySelector('#team')!.textContent!,/Cinta Elección/);
     click('#add'); input('#pokemon-input','Gastrodon'); await ready(); input('#move-0','Terremoto'); input('#item-input','Panuelo Eleccion'); await save();
     assert.match(d.querySelector('#team')!.textContent!,/Pañuelo Elección/);
-    click('#choose-rival'); input('#pokemon-input','Jolteon'); await ready(); await save();
+    assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,true);
+    click('#import-enemy-team');
+    input('#showdown-paste', `electrico (Jolteon) @ Choice Scarf
+Ability: Volt Absorb
+- Thunderbolt
+
+serpiente (Gyarados) @ Choice Band
+Ability: Intimidate
+- Surf`);
+    click('#confirm-import');
+    await until(()=>!d.querySelector('#team-importer')?.hasAttribute('open'),'Enemy import failed: '+d.querySelector('#import-error')?.textContent);
+    assert.equal(d.querySelector('#enemy-count')!.textContent,'2 / 6');
+    assert.equal(d.querySelectorAll('[data-enemy-index]').length,2);
+    assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,true);
+    click('[data-enemy-index="0"]');
+    await until(()=>!(d.querySelector('#choose-rival') as HTMLButtonElement).disabled,'Enemy selection failed');
+    assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Rival activo/);
+    assert.match(d.querySelector('#rival')!.textContent!,/Jolteon/);
     assert.match(d.querySelector('.match-head')!.textContent!,/Gyarados/);
     assert.ok(!d.querySelector('#ranking')!.textContent!.includes('índice'));
     assert.match(d.querySelector('#defensive-types')!.textContent!,/Debilidades y resistencias/);
@@ -128,17 +145,24 @@ Tera Type: Ground
     assert.ok(d.querySelector('#editor')!.hasAttribute('open'));
     input('#move-1','Rayo hielo'); await ready(); await save();
     assert.match(d.querySelector('#team')!.textContent!,/Rayo hielo/);
-    // Changing species resets revealed moves, ability and object.
+    // Editing the active rival updates that member inside the imported enemy team.
     click('#choose-rival'); await ready(); input('#pokemon-input','Gyarados'); await ready();
     assert.equal((d.querySelector('#move-0') as HTMLInputElement).value,'');
     assert.equal((d.querySelector('#ability') as HTMLSelectElement).value,'');
+    (d.querySelector('#ability') as HTMLSelectElement).value = 'intimidate';
     await save();
     assert.match(d.querySelector('#revealed')!.textContent!,/0 \/ 4/);
+    assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Gyarados/);
     const saved = dom.window.localStorage.getItem('randomlocke.team.v1')!;
+    const persisted = JSON.parse(saved);
+    assert.equal(persisted.enemyTeam[0].pokemon,'gyarados');
+    assert.equal(persisted.selectedEnemyIndex,0);
     dom.window.close(); dom = await page(saved); d = dom.window.document;
     assert.equal(d.querySelector('#count')!.textContent,'2 / 6');
     assert.match(d.querySelector('#team')!.textContent!,/Rayo hielo/);
-    assert.match(d.querySelector('#rival')!.textContent!,/Elegí a quién/);
+    assert.equal(d.querySelector('#enemy-count')!.textContent,'2 / 6');
+    assert.match(d.querySelector('#rival')!.textContent!,/Gyarados/);
+    assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Rival activo/);
     click('[data-remove="0"]'); await until(()=>d.querySelector('#count')!.textContent === '1 / 6','Removal failed');
     assert.equal(JSON.parse(dom.window.localStorage.getItem('randomlocke.team.v1')!).team[0].pokemon,'gastrodon');
     dom.window.close(); dom = await page('{bad-json'); d = dom.window.document;
