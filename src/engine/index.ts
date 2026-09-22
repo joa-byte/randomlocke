@@ -11,7 +11,7 @@ function evaluated(attacker: Member, defender: Member, moves: Move[]) {
 export function rank(team: Member[], rival: Member) {
   const synthetic: Move[] = rival.types.flatMap(type => (['physical','special'] as const).map(category => ({
     id: `estimate-${type}-${category}`, label: `Estimación ${typeNames[type]} (${category === 'physical' ? 'físico' : 'especial'})`,
-    type, category, power: 80, accuracy: 100, priority: 0, unsupported: false
+    type, category, power: 80, accuracy: 100, priority: 0, unsupported: false, effects: [], effectNote: null
   })));
   // Unknown slots retain a STAB baseline, but never pretend to reveal randomized coverage.
   const incomplete = rival.moves.length < 4;
