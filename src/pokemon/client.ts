@@ -111,7 +111,7 @@ export class PokeClient {
       sprite: p.sprites.front_default ?? null,
       abilities: await Promise.all(p.abilities.map(async (a: Resource) => {
         const detail = await this.get(`ability/${a.ability.name}`);
-        return {id: a.ability.name, label: localized(detail, 'ability'), hidden: a.is_hidden};
+        return {id: a.ability.name, label: localized(detail, 'ability'), description:abilityDescription(detail), hidden: a.is_hidden};
       })) };
   }
   async move(id: string): Promise<Move> {
@@ -129,3 +129,10 @@ export class PokeClient {
 }
 export function title(value: string) { return value.replaceAll('-', ' ').replace(/\b\w/g, c => c.toUpperCase()); }
 export function localized(data: Resource, kind: 'move'|'ability'|'item'): string { return data.names?.find((n: Resource) => n.language.name === 'es')?.name ?? translated(kind, data.id, title(data.name)); }
+
+export function abilityDescription(data: Resource): string | null {
+  const effect = data.effect_entries?.find((e: Resource) => e.language?.name === 'es');
+  const flavor = data.flavor_text_entries?.filter((e: Resource) => e.language?.name === 'es').at(-1);
+  const text = effect?.short_effect ?? effect?.effect ?? flavor?.flavor_text;
+  return text ? String(text).replace(/\s+/g, ' ').trim() : null;
+}

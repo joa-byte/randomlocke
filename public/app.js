@@ -65,7 +65,10 @@ function parseShowdownTeam(text) {
     if (!pokemon) throw new Error(`No pude leer el Pokémon #${index + 1}.`);
     if (!ability) throw new Error(`${pokemon}: falta la línea "Ability:".`);
     if (moves.length > 4) throw new Error(`${pokemon}: tiene más de cuatro movimientos.`);
-    return {pokemon, ability, item:itemMatch?.[2]?.trim() || null, moves};
+    const teraName = lines.find(line => /^Tera Type:/i.test(line))?.replace(/^Tera Type:\s*/i, '').trim().toLowerCase();
+    const teraType = teraName ? Object.keys(names).find(type => type === teraName || normalizedName(names[type]) === normalizedName(teraName)) : null;
+    if (teraName && !teraType) throw new Error(`${pokemon}: teratipo desconocido \"${teraName}\".`);
+    return {pokemon, ability, teraType:teraType ?? null, teraActive:false, item:itemMatch?.[2]?.trim() || null, moves};
   });
 }
 function importedAbility(pokemon, value) {
@@ -77,7 +80,7 @@ const moveEffectText = m => [...(m.effects ?? []), ...(m.effectNote && !(m.effec
 const moveEffectsHtml = m => { const effects = moveEffectText(m); return effects.length ? `<span class="move-effects">${effects.map(esc).join(' · ')}</span>` : ''; };
 const attackList = (moves, empty, direction = null) => moves.length ? `<ul class="effect-list">${moves.map(m => `<li>${badge(m.type)} <span>${esc(m.label)}</span> <strong>${m.value === null ? '—' : factor(m.value)}</strong>
   <span class="move-category">${m.category === 'physical' ? 'Físico' : m.category === 'special' ? 'Especial' : 'Estado'}</span>
-  ${m.stab > 1 ? `<strong class="stab" title="Bonificación por coincidir con un tipo del atacante${m.stab === 2 ? '; Adaptable' : ''}">STAB ${factor(m.stab)}</strong>` : ''}
+  ${m.stab > 1 ? `<strong class="stab" title="Bonificación por coincidir con un tipo del atacante${m.stab >= 2 ? '; Tera o Adaptable' : ''}">STAB ${factor(m.stab)}</strong>` : ''}
   ${direction && m.category !== 'status' ? `<small class="attack-stats">Potencia base ${m.power ?? 'variable'} · ${m.comparison ? `${direction === 'outgoing' ? 'Tu' : 'Rival'} ${m.comparison.attackLabel} ${m.comparison.attack} / ${direction === 'outgoing' ? 'Rival' : 'Tu'} ${m.comparison.defenseLabel} ${m.comparison.defense}` : 'Estadísticas especiales: sin comparar'}${m.stab === null ? ' · STAB sin calcular' : ''}</small>` : ''}
   ${moveEffectsHtml(m)}
   ${m.note ? `<small>${esc(m.note)}</small>` : ''}</li>`).join('')}</ul>` : `<p class="hint">${esc(empty)}</p>`;
@@ -95,7 +98,7 @@ async function selectEnemy(index) {
   if (busy || index < 0 || index >= enemyTeam.length) return;
   busy = true;
   try {
-    const nextRival = enemyTeam[index];
+    const nextRival = {...enemyTeam[index],teraActive:false};
     const next = await api('/api/analyze', {team,rival:nextRival});
     selectedEnemyIndex = index; rival = nextRival; result = next;
     for (const move of next.rival?.moves ?? []) enemyMoves.set(move.id, move);
@@ -109,7 +112,7 @@ function render() {
   if (!result) return;
   $('team').innerHTML = result.team.length ? result.team.map((p,i) => `<article class="card">
     ${monHead(p)}${stats(p)}
-    <p class="equipment">${esc(p.abilities.find(a => a.id === p.ability)?.label)} · ${esc(p.item ? catalogs.item?.find(item => item.id === p.item)?.label ?? p.item : 'Sin objeto')}</p>
+    <p class="equipment">${esc(p.abilityLabel ?? p.abilities.find(a => a.id === p.ability)?.label ?? p.ability)} · ${esc(p.item ? catalogs.item?.find(item => item.id === p.item)?.label ?? p.item : 'Sin objeto')}</p>
     <div class="moves">${p.moves.length ? p.moves.map(m => `<div>${badge(m.type)} <span>${esc(m.label)}</span><small>${m.category === 'physical' ? 'Fís.' : m.category === 'special' ? 'Esp.' : 'Estado'}${m.power ? ` · ${m.power}` : ''}</small>${moveEffectsHtml(m)}</div>`).join('') : '<p class="muted">Sin movimientos cargados</p>'}</div>
     ${p.warnings?.length ? `<details><summary>Efectos y límites</summary><ul>${p.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul></details>` : ''}
     <div class="card-actions"><button class="secondary" data-edit="${i}">Editar</button><button class="quiet" data-remove="${i}" aria-label="Quitar ${esc(p.label)}">Quitar</button></div>
@@ -129,7 +132,13 @@ function render() {
   }).join('') : '<div class="empty team-empty">Importá el equipo enemigo para elegir contra quién comparar.</div>';
   document.querySelectorAll('[data-enemy-index]').forEach(b => b.addEventListener('click', () => selectEnemy(Number(b.dataset.enemyIndex))));
   $('rival').className = result.rival ? '' : 'empty';
-  $('rival').innerHTML = result.rival ? monHead(result.rival) + stats(result.rival) : 'Elegí a quién te enfrentás.';
+  $('rival').innerHTML = result.rival ? monHead(result.rival) + stats(result.rival) + `<p class="equipment">${esc(result.rival.abilityLabel ?? result.rival.ability ?? 'Habilidad desconocida')}</p><p class="hint">${esc(result.rival.abilityDescription ?? 'Descripción de habilidad no disponible en español.')}</p>${result.rival.teraType ? `<p>Teratipo: ${badge(result.rival.teraType)} <button id="toggle-tera" class="secondary" aria-pressed="${!!result.rival.teraActive}">${result.rival.teraActive ? 'Desactivar Tera' : 'Activar Tera'}</button></p>` : '<p class="hint">Sin teratipo cargado</p>'}` : 'Elegí a quién te enfrentás.';
+  $('toggle-tera')?.addEventListener('click', async () => {
+    if (busy || !rival) return;
+    busy = true;
+    try { const next = {...rival,teraActive:!rival.teraActive}; const analysis = await api('/api/analyze',{team,rival:next}); rival = next; result = analysis; persist(); render(); notice(''); }
+    catch (e) { notice(e.message); } finally { busy = false; }
+  });
   $('choose-rival').disabled = !rival;
   $('choose-rival').textContent = rival ? 'Editar seleccionado' : 'Seleccioná un rival arriba';
   $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques cargados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
@@ -214,6 +223,7 @@ async function openEditor(target, focusMove = null) {
   $('editor-title').textContent = target === 'rival' ? 'Editar rival activo' : target === null ? 'Agregar Pokémon' : 'Editar Pokémon';
   $('moves-title').textContent = target === 'rival' ? 'Ataques del rival' : 'Movimientos';
   $('ability').innerHTML = '<option value="">Elegí primero un Pokémon</option>';
+  $('tera-type').innerHTML = '<option value="">Sin teratipo</option>' + Object.entries(names).map(([id,label])=>`<option value="${id}">${esc(label)}</option>`).join('');
   $('save').disabled = true; setMoveFields(); $('editor').showModal();
   try { await loadCatalogs(); }
   catch (e) { $('form-error').textContent = e.message; }
@@ -221,6 +231,7 @@ async function openEditor(target, focusMove = null) {
   const selection = target === 'rival' ? rival : target === null ? null : team[target];
   if (selection) {
     $('pokemon-input').value = catalogs.pokemon?.find(p => p.id === selection.pokemon)?.label ?? selection.pokemon;
+    $('tera-type').value = selection.teraType ?? '';
     $('item-input').value = catalogs.item?.find(p => p.id === selection.item)?.label ?? selection.item ?? '';
     setMoveFields(selection.moves);
     await loadPokemon(selection.pokemon, selection.ability, true);
@@ -254,7 +265,7 @@ function openImporter(target) {
   const enemy = target === 'enemy';
   $('team-import-title').textContent = enemy ? 'Importar equipo enemigo' : 'Importar mi equipo';
   $('import-label').textContent = enemy ? 'Equipo enemigo de Pokémon Showdown' : 'Mi equipo de Pokémon Showdown';
-  $('import-description').textContent = 'Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Nivel, EVs, naturaleza y Tera se ignoran.';
+  $('import-description').textContent = 'Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Se conserva el teratipo. Nivel, EVs y naturaleza se ignoran.';
   $('import-warning').textContent = enemy ? 'Al importar, se reemplaza el equipo enemigo actual y se limpia el rival activo.' : 'Al importar, se reemplaza tu equipo actual completo.';
   $('confirm-import').textContent = enemy ? 'Importar equipo enemigo' : 'Importar mi equipo';
   $('team-importer').showModal();
@@ -282,7 +293,7 @@ $('import-form').addEventListener('submit', async event => {
       const ability = importedAbility(pokemon, entry.ability);
       if (!ability) throw new Error(`${pokemon.label}: no encuentro la habilidad "${entry.ability}".`);
       candidate.push({
-        pokemon:pokemon.id,
+        pokemon:pokemon.id, teraType:entry.teraType, teraActive:false,
         ability,
         item:entry.item ? resolveInput('item',entry.item) : null,
         moves:entry.moves.map(move => resolveInput('move',move)).filter(Boolean)
@@ -312,7 +323,7 @@ $('choose-rival').addEventListener('click', () => { if (rival) openEditor('rival
 $('edit-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (!chosen || loadingPokemon || busy) return;
-  const selection = {pokemon:chosen.id, ability:$('ability').value || null, item:resolveInput('item',$('item-input').value), moves:[...document.querySelectorAll('.move-input')].map(input => resolveInput('move',input.value)).filter(Boolean)};
+  const selection = {teraType:$('tera-type').value || null, teraActive:editing === 'rival' && rival?.teraActive && rival?.teraType === $('tera-type').value || false, pokemon:chosen.id, ability:$('ability').value || null, item:resolveInput('item',$('item-input').value), moves:[...document.querySelectorAll('.move-input')].map(input => resolveInput('move',input.value)).filter(Boolean)};
   const nextTeam = [...team]; const nextEnemyTeam = [...enemyTeam]; let nextRival = rival;
   if (editing === 'rival') {
     nextRival = selection;

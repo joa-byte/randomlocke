@@ -49,3 +49,16 @@ test('physical/special stats and STAB are informational and separate from effect
   assert.equal(attackEffect(move('ground','physical',80,{id:'body-press'}),a,d).comparison,null);
   const card=compareTeam([a],d)[0]; assert.equal(card.speed,81); assert.equal(card.rivalSpeed,125);
 });
+
+test('Tera replaces defensive types and preserves move types and original STAB', () => {
+  const original = mon('rival',['water','flying'],{teraType:'electric',teraActive:true,originalTypes:['water','flying'],types:['electric']});
+  const defender = mon('target',['normal']);
+  assert.equal(attackEffect(move('water'),original,defender).stab,1.5);
+  assert.equal(attackEffect(move('flying'),original,defender).stab,1.5);
+  assert.equal(attackEffect(move('electric'),original,defender).stab,1.5);
+  assert.equal(attackEffect(move('ice'),original,defender).stab,1);
+  assert.equal(attackEffect(move('ground'),defender,original).value,2);
+  assert.equal(attackEffect(move('water'),original,defender).type,'water');
+  assert.equal(attackEffect(move('water'),{...original,teraType:'water',types:['water']},defender).stab,2);
+  assert.equal(attackEffect(move('water'),{...original,teraType:'water',types:['water'],ability:'adaptability'},defender).stab,2.25);
+});

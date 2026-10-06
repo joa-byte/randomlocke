@@ -11,7 +11,7 @@ const species: Record<string,Pokemon> = {
   'deoxys-attack': {...mon('deoxys-attack',['psychic']),label:'Deoxys (Forma Ataque)',abilities:[{id:'pressure',label:'Presión',hidden:false}]},
   gyarados: {...mon('gyarados',['water','flying']),label:'Gyarados',abilities:[{id:'intimidate',label:'Intimidación',hidden:false},{id:'moxie',label:'Autoestima',hidden:true}]},
   gastrodon: {...mon('gastrodon',['water','ground']),label:'Gastrodon',abilities:[{id:'storm-drain',label:'Colector',hidden:false}]},
-  jolteon: {...mon('jolteon',['electric']),label:'Jolteon',abilities:[{id:'volt-absorb',label:'Absorbe electricidad',hidden:false}]}
+  jolteon: {...mon('jolteon',['electric']),label:'Jolteon',abilities:[{id:'volt-absorb',label:'Absorbe electricidad',description:'Recupera PS al recibir un ataque eléctrico.',hidden:false}]}
 };
 const moves: Record<string,Move> = {
   waterfall: move('water','physical',80,{id:'waterfall',label:'Cascada'}),
@@ -140,6 +140,7 @@ Ability: Shadow Tag
     click('#import-enemy-team');
     input('#showdown-paste', `electrico (Jolteon) @ Choice Scarf
 Ability: Volt Absorb
+Tera Type: Water
 - Thunderbolt
 
 serpiente (Gyarados) @ Choice Band
@@ -155,6 +156,15 @@ Ability: Intimidate
     await until(()=>!(d.querySelector('#choose-rival') as HTMLButtonElement).disabled,'Enemy selection failed');
     assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Rival activo/);
     assert.match(d.querySelector('#rival')!.textContent!,/Jolteon/);
+    assert.match(d.querySelector('#rival')!.textContent!,/Recupera PS/);
+    click('#toggle-tera');
+    await until(()=>d.querySelector('#toggle-tera')?.textContent === 'Desactivar Tera','Tera activation failed');
+    assert.equal(d.querySelectorAll('#rival .mon-head .type').length,1);
+    assert.match(d.querySelector('#rival .mon-head')!.textContent!,/Agua/);
+    assert.match(d.querySelector('#revealed')!.textContent!,/Rayo/);
+    click('#toggle-tera');
+    await until(()=>d.querySelector('#toggle-tera')?.textContent === 'Activar Tera','Tera deactivation failed');
+    assert.match(d.querySelector('#rival .mon-head')!.textContent!,/Eléctrico/);
     assert.match(d.querySelector('.match-head')!.textContent!,/Gyarados/);
     assert.ok(!d.querySelector('#ranking')!.textContent!.includes('índice'));
     assert.match(d.querySelector('#defensive-types')!.textContent!,/Debilidades y resistencias/);

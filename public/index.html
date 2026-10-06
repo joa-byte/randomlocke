@@ -46,7 +46,7 @@
   <dialog id="team-importer" aria-labelledby="team-import-title">
     <form id="import-form">
       <div class="section-head"><h2 id="team-import-title">Importar equipo</h2><button type="button" id="close-import" class="secondary" aria-label="Cerrar importador">Cerrar</button></div>
-      <p id="import-description" class="hint">Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Nivel, EVs, naturaleza y Tera se ignoran.</p>
+      <p id="import-description" class="hint">Pegá un export de Pokémon Showdown. Se importan Pokémon, habilidad, objeto y hasta cuatro movimientos. Se conserva el teratipo. Nivel, EVs y naturaleza se ignoran.</p>
       <label><span id="import-label">Equipo de Pokémon Showdown</span>
         <textarea id="showdown-paste" rows="14" spellcheck="false" placeholder="paragua (Sandslash-Alola) (M) @ Salac Berry&#10;Ability: Sticky Hold&#10;Level: 50&#10;- Wake-Up Slap&#10;- Toxic&#10;- Avalanche&#10;- Milk Drink"></textarea>
       </label>
@@ -63,6 +63,7 @@
       <p class="hint">Buscá por el nombre del catálogo; las formas aparecen por separado.</p>
       <div id="pokemon-preview"></div>
       <label>Habilidad<select id="ability"><option value="">Elegí primero un Pokémon</option></select></label>
+      <label>Teratipo <span class="muted">opcional</span><select id="tera-type"><option value="">Sin teratipo</option></select></label>
       <label>Objeto <span class="muted">opcional</span><input id="item-input" list="item-list" autocomplete="off" placeholder="Ej.: Cinta Elección"></label>
       <datalist id="item-list"></datalist>
       <fieldset><legend id="moves-title">Movimientos</legend><div id="move-fields"></div></fieldset>
