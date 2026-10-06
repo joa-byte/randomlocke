@@ -18,8 +18,10 @@ export function attackEffect(move: Move, attacker: Member, defender: Member) {
   }
   const damaging = move.category !== 'status';
   const variableType = ['weather-ball','terrain-pulse','judgment','multi-attack','techno-blast','revelation-dance','tera-blast','terastar-storm'].includes(move.id) || TYPE_ABILITIES.has(attacker.ability ?? '');
+  const originalStab = (attacker.originalTypes ?? attacker.types).includes(move.type);
+  const teraStab = attacker.teraActive && attacker.teraType === move.type;
   const stab = !damaging || !move.power || variableType || move.id === 'struggle' ? null
-    : attacker.types.includes(move.type) ? attacker.ability === 'adaptability' ? 2 : 1.5 : 1;
+    : attacker.teraActive ? teraStab ? originalStab ? attacker.ability === 'adaptability' ? 2.25 : 2 : attacker.ability === 'adaptability' ? 2 : 1.5 : originalStab ? 1.5 : 1 : originalStab ? attacker.ability === 'adaptability' ? 2 : 1.5 : 1;
   const unusualStats = ['psyshock','psystrike','secret-sword','foul-play','body-press','photon-geyser','light-that-burns-the-sky','shell-side-arm','tera-blast'].includes(move.id);
   const physical = move.category === 'physical';
   const comparison = !damaging || unusualStats ? null : {

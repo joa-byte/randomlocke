@@ -32,7 +32,7 @@ function upstream() {
 test('API validates team, payload, slugs, abilities and duplicate moves', async () => {
   const valid = {pokemon:'pikachu',ability:'static',item:null,moves:['thunderbolt']};
   assert.deepEqual(validateSelection(valid),valid);
-  for (const bad of [{...valid,pokemon:'../../etc/passwd'}, {...valid,moves:['thunderbolt','thunderbolt']},{...valid,ability:null},{...valid,moves:new Array(5).fill('x')}]) assert.throws(()=>validateSelection(bad));
+  for (const bad of [{...valid,pokemon:'../../etc/passwd'}, {...valid,moves:['thunderbolt','thunderbolt']},{...valid,ability:null},{...valid,teraType:'stellar'},{...valid,teraActive:true},{...valid,teraActive:'yes'},{...valid,moves:new Array(5).fill('x')}]) assert.throws(()=>validateSelection(bad));
   const dir = await mkdtemp(join(tmpdir(),'randomlocke-api-'));
   const mock = upstream(); const client = new PokeClient(mock.fetcher,dir);
   try {
