@@ -17,7 +17,9 @@ const moves: Record<string,Move> = {
   surf: move('water','special',90,{id:'surf',label:'Surf'}),
   earthquake: move('ground','physical',100,{id:'earthquake',label:'Terremoto'}),
   thunderbolt: move('electric','special',90,{id:'thunderbolt',label:'Rayo',effects:['Puede aplicar parálisis (10%)']}),
-  'ice-beam': move('ice','special',90,{id:'ice-beam',label:'Rayo hielo',effects:['Puede aplicar congelación (10%)']})
+  'ice-beam': move('ice','special',90,{id:'ice-beam',label:'Rayo hielo',effects:['Puede aplicar congelación (10%)']}),
+  'natures-madness': move('fairy','special',null,{id:'natures-madness',label:'Furia Natural'}),
+  'feint-attack': move('dark','physical',60,{id:'feint-attack',label:'Finta'})
 };
 class FakeClient extends PokeClient {
   override async catalog(kind: string): Promise<Named[]> {
@@ -26,7 +28,7 @@ class FakeClient extends PokeClient {
   }
   override async pokemon(id: string) { if (!species[id]) throw new ApiError('No encontrado en PokéAPI',404); return species[id]; }
   override async move(id: string) { if (!moves[id]) throw new ApiError('Movimiento inexistente',404); return moves[id]; }
-  override async get(path: string) { if (path === 'item/choice-band') return {name:'choice-band',names:[{language:{name:'es'},name:'Cinta Elección'}]}; if (path === 'item/choice-scarf') return {name:'choice-scarf',names:[{language:{name:'es'},name:'Pañuelo Elección'}]}; throw new ApiError('Objeto inexistente',404); }
+  override async get(path: string) { if (path === 'ability/shadow-tag') return {name:'shadow-tag'}; if (path === 'item/choice-band') return {name:'choice-band',names:[{language:{name:'es'},name:'Cinta Elección'}]}; if (path === 'item/choice-scarf') return {name:'choice-scarf',names:[{language:{name:'es'},name:'Pañuelo Elección'}]}; throw new ApiError('Objeto inexistente',404); }
 }
 const html = await readFile(new URL('../public/index.html',import.meta.url),'utf8');
 const js = await readFile(new URL('../public/app.js',import.meta.url),'utf8');
@@ -89,6 +91,20 @@ Tera Type: Ground
     assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('randomlocke.team.v1')!).team.map((p:{pokemon:string})=>p.pokemon),['gyarados','gastrodon']);
     click('[data-remove="1"]'); await until(()=>d.querySelector('#count')!.textContent === '1 / 6','Imported removal failed');
     click('[data-remove="0"]'); await until(()=>d.querySelector('#count')!.textContent === '0 / 6','Imported cleanup failed');
+    click('#import-team');
+    input('#showdown-paste', `NAHUEVO (Gyarados) (M) @ Choice Band
+Ability: Shadow Tag
+- Nature's Madness
+- Faint Attack`);
+    click('#confirm-import');
+    await until(()=>!d.querySelector('#team-importer')?.hasAttribute('open'),'Apostrophe import failed: '+d.querySelector('#import-error')?.textContent);
+    assert.deepEqual(JSON.parse(dom.window.localStorage.getItem('randomlocke.team.v1')!).team[0].moves,['natures-madness','feint-attack']);
+    assert.equal(JSON.parse(dom.window.localStorage.getItem('randomlocke.team.v1')!).team[0].ability,'shadow-tag');
+    click('[data-edit="0"]'); await ready();
+    assert.equal((d.querySelector('#ability') as HTMLSelectElement).value,'shadow-tag');
+    await save();
+    assert.equal(JSON.parse(dom.window.localStorage.getItem('randomlocke.team.v1')!).team[0].ability,'shadow-tag');
+    click('[data-remove="0"]'); await until(()=>d.querySelector('#count')!.textContent === '0 / 6','Apostrophe cleanup failed');
     const moveOptions = [...d.querySelectorAll<HTMLOptionElement>('#move-list option')].map(o=>o.value);
     const pokemonOptions = [...d.querySelectorAll<HTMLOptionElement>('#pokemon-list option')].map(o=>o.value);
     assert.ok(moveOptions.includes('Terremoto'));
@@ -174,4 +190,45 @@ Ability: Intimidate
   } finally {
     dom?.window.close(); server.closeAllConnections(); await new Promise<void>(resolve=>server.close(()=>resolve()));
   }
+});
+
+test('raw randomlocke export preserves six species, randomized abilities and metadata', () => {
+  const helpers = new Function(`${js.slice(js.indexOf('const slug ='), js.indexOf('const badge ='))}\n${js.slice(js.indexOf('function parseShowdownTeam'), js.indexOf('const factor ='))}\nreturn {parseShowdownTeam, importedAbility, normalizedName};`)();
+  const raw = `nestor (Cofagrigus) (M) @ Pixie Plate
+Ability: Synchronize
+Level: 36
+Happiness: 205
+EVs: 9 HP / 14 Atk / 8 Def / 7 SpA / 7 SpD / 13 Spe
+IVs: 30 HP / 12 Atk / 18 Def / 25 SpA / 11 SpD / 29 Spe
+Lax Nature
+- Burning Bulwark
+- Infernal Parade
+- Snipe Shot
+- Misty Explosion
+
+turbogarcha (Lanturn) (M) @ Bright Powder
+Ability: Solar Power
+- Soft-Boiled
+
+petera (Lurantis) (M) @ Assault Vest
+Ability: Tangled Feet
+- U-turn
+
+puedefuncar (Pidgeot) (F) @ Normal Gem
+Ability: Moxie
+- King's Shield
+
+curdo (Sudowoodo) (M) @ Rock Gem
+Ability: Refrigerate
+- Accelerock
+
+bajonazo (Pincurchin) (M) @ Muscle Band
+Ability: Libero
+- Ceaseless Edge`;
+  const entries = helpers.parseShowdownTeam(raw.replaceAll('\n', '\r\n'));
+  assert.deepEqual(entries.map((e:any)=>e.pokemon), ['Cofagrigus','Lanturn','Lurantis','Pidgeot','Sudowoodo','Pincurchin']);
+  assert.deepEqual(entries.map((e:any)=>helpers.importedAbility({abilities:[]},e.ability)), ['synchronize','solar-power','tangled-feet','moxie','refrigerate','libero']);
+  assert.equal(helpers.normalizedName("King’s Shield"),helpers.normalizedName('kings-shield'));
+  assert.equal(entries[0].item,'Pixie Plate');
+  assert.equal(helpers.parseShowdownTeam('Toucannon (M)\nAbility: Magic Bounce\n- Horn Attack')[0].pokemon,'Toucannon');
 });
