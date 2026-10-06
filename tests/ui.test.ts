@@ -71,6 +71,15 @@ test('DOM + HTTP: create/edit team, reveal rival moves, errors, persistence and 
     const ready = () => until(()=>!(d.querySelector('#save') as HTMLButtonElement).disabled,'Editor did not load');
     const save = async () => { click('#save'); await until(()=>!d.querySelector('#editor')?.hasAttribute('open'),'Editor failed to save: '+d.querySelector('#form-error')?.textContent); };
     assert.match(d.querySelector('#team')!.textContent!,/Agregá hasta seis/);
+    click('#add');
+    const firstPokemon = d.querySelector('#pokemon-input') as HTMLInputElement;
+    firstPokemon.value = 'Gyarados';
+    firstPokemon.dispatchEvent(new dom.window.Event('input',{bubbles:true}));
+    await ready();
+    assert.match(d.querySelector('#pokemon-preview')!.textContent!,/Gyarados/);
+    await save();
+    assert.equal(d.querySelector('#count')!.textContent,'1 / 6');
+    click('[data-remove="0"]'); await until(()=>d.querySelector('#count')!.textContent === '0 / 6','Fresh manual team cleanup failed');
     click('#import-team');
     input('#showdown-paste', `serpiente (Gyarados) (M) @ Choice Band
 Ability: Intimidate
