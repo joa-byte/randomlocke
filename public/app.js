@@ -215,6 +215,9 @@ async function openEditor(target, focusMove = null) {
   $('moves-title').textContent = target === 'rival' ? 'Ataques del rival' : 'Movimientos';
   $('ability').innerHTML = '<option value="">Elegí primero un Pokémon</option>';
   $('save').disabled = true; setMoveFields(); $('editor').showModal();
+  try { await loadCatalogs(); }
+  catch (e) { $('form-error').textContent = e.message; }
+  if (!$('editor').open) return;
   const selection = target === 'rival' ? rival : target === null ? null : team[target];
   if (selection) {
     $('pokemon-input').value = catalogs.pokemon?.find(p => p.id === selection.pokemon)?.label ?? selection.pokemon;
@@ -233,7 +236,13 @@ async function removeMember(index) {
   finally { busy = false; }
 }
 $('pokemon-input').addEventListener('change', event => { if (event.target.value.trim()) loadPokemon(event.target.value); });
-$('pokemon-input').addEventListener('input', () => { ++editEpoch; chosen = null; $('save').disabled = true; });
+$('pokemon-input').addEventListener('input', event => {
+  ++editEpoch; chosen = null; $('save').disabled = true;
+  const value = event.target.value.trim();
+  if (value && catalogs.pokemon?.some(p => [p.id,p.label,...(p.aliases ?? [])].some(name => normalizedName(name) === normalizedName(value)))) {
+    loadPokemon(value);
+  }
+});
 $('close').addEventListener('click', () => { ++editEpoch; $('editor').close(); });
 $('editor').addEventListener('cancel', event => { if (busy) event.preventDefault(); else ++editEpoch; });
 $('add').addEventListener('click', () => openEditor(null));
