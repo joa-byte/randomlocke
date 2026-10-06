@@ -36,7 +36,7 @@ test('API validates team, payload, slugs, abilities and duplicate moves', async 
   const dir = await mkdtemp(join(tmpdir(),'randomlocke-api-'));
   const mock = upstream(); const client = new PokeClient(mock.fetcher,dir);
   try {
-    await assert.rejects(hydrate(client,{...valid,ability:'levitate'}),/no corresponde/);
+    await assert.rejects(hydrate(client,{...valid,ability:'not-real'}),/habilidad.*no encontrada/);
     const p = await hydrate(client,valid); assert.equal(p.moves[0].label,'Rayo'); assert.equal(p.stats.attack,80);
     assert.deepEqual(p.moves[0].effects,['Puede aplicar parálisis (10%)']);
     assert.deepEqual((await client.move('quick-attack')).effects,['Prioridad +1']);
