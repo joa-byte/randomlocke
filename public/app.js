@@ -2,7 +2,7 @@ const $ = id => document.getElementById(id);
 const names = {normal:'Normal',fire:'Fuego',water:'Agua',electric:'Eléctrico',grass:'Planta',ice:'Hielo',fighting:'Lucha',poison:'Veneno',ground:'Tierra',flying:'Volador',psychic:'Psíquico',bug:'Bicho',rock:'Roca',ghost:'Fantasma',dragon:'Dragón',dark:'Siniestro',steel:'Acero',fairy:'Hada'};
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const slug = text => text.trim().toLowerCase().replaceAll(' ', '-');
-const normalizedName = text => slug(text.normalize('NFD').replace(/\p{M}/gu, ''));
+const normalizedName = text => slug(text.normalize('NFD').replace(/\p{M}/gu, '').replace(/[’']/g, ''));
 const badge = type => `<span class="type ${esc(type)}">${esc(names[type] ?? type)}</span>`;
 const sprite = p => p.sprite && /^https:\/\/raw\.(githubusercontent\.com|github\.com)\//.test(p.sprite) ? `<img class="sprite" src="${esc(p.sprite)}" alt="${esc(p.label)}" width="72" height="72">` : '<span class="no-sprite" aria-label="Sin sprite">?</span>';
 const storageKey = 'randomlocke.team.v1';
@@ -61,7 +61,7 @@ function parseShowdownTeam(text) {
 }
 function importedAbility(pokemon, value) {
   const wanted = normalizedName(value);
-  return pokemon.abilities.find(ability => normalizedName(ability.id) === wanted || normalizedName(ability.label) === wanted)?.id ?? null;
+  return pokemon.abilities.find(ability => normalizedName(ability.id) === wanted || normalizedName(ability.label) === wanted)?.id ?? wanted;
 }
 const factor = n => '×' + String(n).replace('.', ',');
 const moveEffectText = m => [...(m.effects ?? []), ...(m.effectNote && !(m.effects ?? []).includes(m.effectNote) ? [m.effectNote] : [])];
@@ -162,6 +162,7 @@ async function loadCatalogs() {
 function resolveInput(kind, input) {
   if (!input.trim()) return null;
   const normalized = normalizedName(input);
+  if (kind === 'move' && normalized === 'faint-attack') return 'feint-attack';
   return catalogs[kind]?.find(entry => [entry.id,entry.label,...(entry.aliases ?? [])].some(name => normalizedName(name) === normalized))?.id ?? slug(input);
 }
 function setMoveFields(moves = []) {
@@ -189,7 +190,10 @@ async function loadPokemon(value, ability = null, preserve = false) {
     chosen = p;
     $('pokemon-preview').innerHTML = monHead(p) + stats(p);
     $('ability').innerHTML = (editing === 'rival' ? '<option value="">Desconocida</option>' : '') + p.abilities.map(a => `<option value="${esc(a.id)}">${esc(a.label)}${a.hidden ? ' (oculta)' : ''}</option>`).join('');
-    if (ability && p.abilities.some(a => a.id === ability)) $('ability').value = ability;
+    if (ability && !p.abilities.some(a => a.id === ability)) {
+      $('ability').insertAdjacentHTML('beforeend', `<option value="${esc(ability)}">${esc(ability.replaceAll('-', ' '))} (randomizada)</option>`);
+    }
+    if (ability) $('ability').value = ability;
     if (!preserve) { $('item-input').value = ''; setMoveFields(); }
   } catch (e) { if (epoch === editEpoch) { $('form-error').textContent = e.message; $('pokemon-preview').textContent = ''; } }
   finally { if (epoch === editEpoch) { loadingPokemon = false; $('save').disabled = !chosen; } }
