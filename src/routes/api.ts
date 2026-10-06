@@ -13,7 +13,10 @@ export function validateSelection(value: any, rival = false): Selection {
 }
 export async function hydrate(client: PokeClient, value: Selection): Promise<Member> {
   const p = await client.pokemon(value.pokemon);
-  if (value.ability && !p.abilities.some(a => a.id === value.ability)) throw new ApiError(`La habilidad elegida no corresponde a ${p.label}.`, 400);
+  if (value.ability && !p.abilities.some(a => a.id === value.ability)) {
+    try { await client.get(`ability/${value.ability}`); }
+    catch (error) { if (error instanceof ApiError && error.status === 404) throw new ApiError(`${p.label}: habilidad "${value.ability}" no encontrada en PokéAPI.`, 400); throw error; }
+  }
   const itemLabel = value.item ? localized(await client.get(`item/${value.item}`), 'item') : null;
   return {...p, ability: value.ability, item: value.item, itemLabel, moves: await Promise.all(value.moves.map(m => client.move(m)))};
 }
