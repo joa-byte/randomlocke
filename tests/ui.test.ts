@@ -14,6 +14,11 @@ const species: Record<string,Pokemon> = {
   jolteon: {...mon('jolteon',['electric']),label:'Jolteon',abilities:[{id:'volt-absorb',label:'Absorbe electricidad',hidden:false}]}
 };
 const moves: Record<string,Move> = {
+  waterfall: move('water','physical',80,{id:'waterfall',label:'Cascada'}),
+  'aerial-ace': move('flying','physical',60,{id:'aerial-ace',label:'Golpe Aéreo'}),
+  'air-slash': move('flying','special',75,{id:'air-slash',label:'Tajo Aéreo'}),
+  'earth-power': move('ground','special',90,{id:'earth-power',label:'Tierra Viva'}),
+  'thunder-punch': move('electric','physical',75,{id:'thunder-punch',label:'Puño Trueno'}),
   surf: move('water','special',90,{id:'surf',label:'Surf'}),
   earthquake: move('ground','physical',100,{id:'earthquake',label:'Terremoto'}),
   thunderbolt: move('electric','special',90,{id:'thunderbolt',label:'Rayo',effects:['Puede aplicar parálisis (10%)']}),
@@ -114,11 +119,13 @@ Ability: Shadow Tag
     assert.ok(!pokemonOptions.includes('deoxys-attack'));
     click('#add'); input('#pokemon-input','Gyarados'); await ready();
     assert.match(d.querySelector('#ability')!.textContent!,/Autoestima \(oculta\)/);
+    assert.deepEqual([...d.querySelectorAll<HTMLInputElement>('.move-input')].map(e=>e.value),['Cascada','Surf','Golpe Aéreo','Tajo Aéreo']);
+    input('#move-1',''); input('#move-2',''); input('#move-3','');
     input('#move-0','surf'); input('#item-input','Choice Band'); await save();
     assert.equal(d.querySelector('#count')!.textContent,'1 / 6');
     assert.match(d.querySelector('#team')!.textContent!,/Surf/);
     assert.match(d.querySelector('#team')!.textContent!,/Cinta Elección/);
-    click('#add'); input('#pokemon-input','Gastrodon'); await ready(); input('#move-0','Terremoto'); input('#item-input','Panuelo Eleccion'); await save();
+    click('#add'); input('#pokemon-input','Gastrodon'); await ready(); input('#move-1',''); input('#move-2',''); input('#move-3',''); input('#move-0','Terremoto'); input('#item-input','Panuelo Eleccion'); await save();
     assert.match(d.querySelector('#team')!.textContent!,/Pañuelo Elección/);
     assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,true);
     click('#import-enemy-team');
@@ -231,4 +238,12 @@ Ability: Libero
   assert.equal(helpers.normalizedName("King’s Shield"),helpers.normalizedName('kings-shield'));
   assert.equal(entries[0].item,'Pixie Plate');
   assert.equal(helpers.parseShowdownTeam('Toucannon (M)\nAbility: Magic Bounce\n- Horn Attack')[0].pokemon,'Toucannon');
+});
+
+ test('default type moves supply physical then special slots for all eighteen types', () => {
+  const source = js.slice(js.indexOf('const defaultTypeMoves ='), js.indexOf('const sprite ='));
+  const {defaultMoves, defaultTypeMoves} = new Function(`${source}; return {defaultMoves,defaultTypeMoves};`)();
+  assert.equal(Object.keys(defaultTypeMoves).length,18);
+  assert.deepEqual(defaultMoves(['electric']),['thunder-punch','thunderbolt']);
+  assert.deepEqual(defaultMoves(['water','flying']),['waterfall','surf','aerial-ace','air-slash']);
 });

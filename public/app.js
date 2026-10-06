@@ -4,6 +4,15 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 const slug = text => text.trim().toLowerCase().replaceAll(' ', '-');
 const normalizedName = text => slug(text.normalize('NFD').replace(/\p{M}/gu, '').replace(/[’']/g, ''));
 const badge = type => `<span class="type ${esc(type)}">${esc(names[type] ?? type)}</span>`;
+const defaultTypeMoves = {
+  normal:['body-slam','hyper-voice'], fire:['fire-punch','flamethrower'], water:['waterfall','surf'],
+  electric:['thunder-punch','thunderbolt'], grass:['seed-bomb','energy-ball'], ice:['ice-punch','ice-beam'],
+  fighting:['brick-break','focus-blast'], poison:['poison-jab','sludge-bomb'], ground:['earthquake','earth-power'],
+  flying:['aerial-ace','air-slash'], psychic:['zen-headbutt','psychic'], bug:['x-scissor','bug-buzz'],
+  rock:['rock-slide','power-gem'], ghost:['shadow-claw','shadow-ball'], dragon:['dragon-claw','dragon-pulse'],
+  dark:['crunch','dark-pulse'], steel:['iron-head','flash-cannon'], fairy:['play-rough','moonblast']
+};
+const defaultMoves = types => types.flatMap(type => defaultTypeMoves[type] ?? []).slice(0,4);
 const sprite = p => p.sprite && /^https:\/\/raw\.(githubusercontent\.com|github\.com)\//.test(p.sprite) ? `<img class="sprite" src="${esc(p.sprite)}" alt="${esc(p.label)}" width="72" height="72">` : '<span class="no-sprite" aria-label="Sin sprite">?</span>';
 const storageKey = 'randomlocke.team.v1';
 let team = [], enemyTeam = [], selectedEnemyIndex = null, rival = null, result = null, editing = null, chosen = null, editEpoch = 0, loadingPokemon = false, catalogs = {};
@@ -194,7 +203,7 @@ async function loadPokemon(value, ability = null, preserve = false) {
       $('ability').insertAdjacentHTML('beforeend', `<option value="${esc(ability)}">${esc(ability.replaceAll('-', ' '))} (randomizada)</option>`);
     }
     if (ability) $('ability').value = ability;
-    if (!preserve) { $('item-input').value = ''; setMoveFields(); }
+    if (!preserve) { $('item-input').value = ''; setMoveFields(editing === null ? defaultMoves(p.types) : []); }
   } catch (e) { if (epoch === editEpoch) { $('form-error').textContent = e.message; $('pokemon-preview').textContent = ''; } }
   finally { if (epoch === editEpoch) { loadingPokemon = false; $('save').disabled = !chosen; } }
 }
