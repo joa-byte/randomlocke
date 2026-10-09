@@ -193,7 +193,8 @@ Ability: Intimidate
     assert.match(d.querySelector('#team')!.textContent!,/Puede aplicar congelación \(10%\)/);
     // Editing the active rival updates that member inside the imported enemy team.
     click('#choose-rival'); await ready(); input('#pokemon-input','Gyarados'); await ready();
-    assert.equal((d.querySelector('#move-0') as HTMLInputElement).value,'');
+    assert.equal((d.querySelector('#move-0') as HTMLInputElement).value,'Cascada');
+    for (let i = 0; i < 4; i++) input(`#move-${i}`,'');
     assert.equal((d.querySelector('#ability') as HTMLSelectElement).value,'');
     (d.querySelector('#ability') as HTMLSelectElement).value = 'intimidate';
     await save();
