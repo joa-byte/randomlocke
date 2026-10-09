@@ -151,8 +151,8 @@ function render() {
     <div class="match-head">${sprite(r)}<strong>${esc(r.label)}</strong></div>
     <p class="hint base-speed">Velocidad base: tu Pokémon ${r.speed} · rival ${r.rivalSpeed}</p>
     <div class="pros-cons">
-      <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.', 'outgoing')}</div>
-      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces cargadas.' : 'Sin ataques rivales cargados.', 'incoming')}</div>
+      <div class="pros"><h3>Pros</h3>${attackList(r.pros, 'Sin ataques supereficaces.', 'outgoing')}${r.defensiveImmunities?.length ? `<h4>Inmune a ataques rivales</h4>${attackList(r.defensiveImmunities, '', 'incoming')}` : ''}</div>
+      <div class="cons"><h3>Contras</h3>${attackList(r.cons, result.rival.moves.length ? 'Sin amenazas supereficaces cargadas.' : 'Sin ataques rivales cargados.', 'incoming')}${r.blockedAttacks?.length ? `<h4>Rival inmune a tus ataques</h4>${attackList(r.blockedAttacks, '', 'outgoing')}` : ''}</div>
     </div>
     <details><summary>Ver todos los ataques</summary>
       <p class="hint">Ataque y defensa base, sin modificadores.</p>

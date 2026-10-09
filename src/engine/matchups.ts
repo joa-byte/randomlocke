@@ -44,6 +44,8 @@ export function compareTeam(team: Member[], rival: Member) {
       speed:member.stats.speed,rivalSpeed:rival.stats.speed,
       pros:outgoing.filter(m => m.value !== null && m.value > 1),
       cons:incoming.filter(m => m.value !== null && m.value > 1),
+      defensiveImmunities:incoming.filter(m => m.value === 0),
+      blockedAttacks:outgoing.filter(m => m.value === 0),
       outgoing,incoming,warnings:matchupWarnings(member)};
   });
 }
