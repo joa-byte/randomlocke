@@ -153,7 +153,7 @@ Ability: Intimidate
     assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Puede aplicar parálisis \(10%\)/);
     assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,false);
     click('[data-enemy-index="0"]');
-    await until(()=>!(d.querySelector('#choose-rival') as HTMLButtonElement).disabled,'Enemy selection failed');
+    await until(()=>d.querySelector('[data-enemy-index="0"]')?.textContent?.includes('Rival activo') ?? false,'Enemy selection failed');
     assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Rival activo/);
     assert.match(d.querySelector('#rival')!.textContent!,/Jolteon/);
     assert.match(d.querySelector('#rival')!.textContent!,/Recupera PS/);
