@@ -136,7 +136,7 @@ Ability: Shadow Tag
     assert.match(d.querySelector('#team')!.textContent!,/Cinta Elección/);
     click('#add'); input('#pokemon-input','Gastrodon'); await ready(); input('#move-1',''); input('#move-2',''); input('#move-3',''); input('#move-0','Terremoto'); input('#item-input','Panuelo Eleccion'); await save();
     assert.match(d.querySelector('#team')!.textContent!,/Pañuelo Elección/);
-    assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,true);
+    assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,false);
     click('#import-enemy-team');
     input('#showdown-paste', `electrico (Jolteon) @ Choice Scarf
 Ability: Volt Absorb
@@ -151,9 +151,9 @@ Ability: Intimidate
     assert.equal(d.querySelector('#enemy-count')!.textContent,'2 / 6');
     assert.equal(d.querySelectorAll('[data-enemy-index]').length,2);
     assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Puede aplicar parálisis \(10%\)/);
-    assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,true);
+    assert.equal((d.querySelector('#choose-rival') as HTMLButtonElement).disabled,false);
     click('[data-enemy-index="0"]');
-    await until(()=>!(d.querySelector('#choose-rival') as HTMLButtonElement).disabled,'Enemy selection failed');
+    await until(()=>d.querySelector('[data-enemy-index="0"]')?.textContent?.includes('Rival activo') ?? false,'Enemy selection failed');
     assert.match(d.querySelector('[data-enemy-index="0"]')!.textContent!,/Rival activo/);
     assert.match(d.querySelector('#rival')!.textContent!,/Jolteon/);
     assert.match(d.querySelector('#rival')!.textContent!,/Recupera PS/);
@@ -193,7 +193,8 @@ Ability: Intimidate
     assert.match(d.querySelector('#team')!.textContent!,/Puede aplicar congelación \(10%\)/);
     // Editing the active rival updates that member inside the imported enemy team.
     click('#choose-rival'); await ready(); input('#pokemon-input','Gyarados'); await ready();
-    assert.equal((d.querySelector('#move-0') as HTMLInputElement).value,'');
+    assert.equal((d.querySelector('#move-0') as HTMLInputElement).value,'Cascada');
+    for (let i = 0; i < 4; i++) input(`#move-${i}`,'');
     assert.equal((d.querySelector('#ability') as HTMLSelectElement).value,'');
     (d.querySelector('#ability') as HTMLSelectElement).value = 'intimidate';
     await save();
