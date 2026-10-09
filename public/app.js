@@ -32,6 +32,7 @@ try {
         rival = enemyTeam[selectedEnemyIndex];
       }
     }
+    if (selectedEnemyIndex === null && stored.standaloneRival && validSaved(stored.standaloneRival)) rival = stored.standaloneRival;
   } else if (stored) storageWarning = 'El equipo guardado tiene un formato incompatible. No se borró.';
 } catch { storageWarning = 'No se pudo leer el equipo guardado. No se borró.'; }
 
@@ -46,7 +47,7 @@ function notice(message, retry = false) {
   $('retry')?.addEventListener('click', () => start());
 }
 function persist() {
-  try { localStorage.setItem(storageKey, JSON.stringify({version:1,team,enemyTeam,selectedEnemyIndex})); }
+  try { localStorage.setItem(storageKey, JSON.stringify({version:1,team,enemyTeam,selectedEnemyIndex,standaloneRival:selectedEnemyIndex === null ? rival : null})); }
   catch { notice('El equipo funciona, pero el navegador no permitió guardarlo.'); }
 }
 function parseShowdownTeam(text) {
@@ -129,7 +130,7 @@ function render() {
       <span class="enemy-moves">${entry.moves.length ? entry.moves.map(id => { const move = enemyMoves.get(id); return `<span class="enemy-move"><strong>${esc(move?.label ?? moveLabel(id))}</strong>${move ? moveEffectsHtml(move) : ''}</span>`; }).join('') : '<span class="muted">Sin movimientos cargados</span>'}</span>
       ${selected ? '<span class="enemy-selected-label">Rival activo</span>' : '<span class="enemy-select-label">Seleccionar rival</span>'}
     </button>`;
-  }).join('') : '<div class="empty team-empty">Importá el equipo enemigo para elegir contra quién comparar.</div>';
+  }).join('') : '<div class="empty team-empty">Sin equipo enemigo importado. Podés elegir un rival salvaje desde el formulario.</div>';
   document.querySelectorAll('[data-enemy-index]').forEach(b => b.addEventListener('click', () => selectEnemy(Number(b.dataset.enemyIndex))));
   $('rival').className = result.rival ? '' : 'empty';
   $('rival').innerHTML = result.rival ? monHead(result.rival) + stats(result.rival) + `<p class="equipment">${esc(result.rival.abilityLabel ?? result.rival.ability ?? 'Habilidad desconocida')}</p><p class="hint">${esc(result.rival.abilityDescription ?? 'Descripción de habilidad no disponible en español.')}</p>${result.rival.teraType ? `<p>Teratipo: ${badge(result.rival.teraType)} <button id="toggle-tera" class="secondary" aria-pressed="${!!result.rival.teraActive}">${result.rival.teraActive ? 'Desactivar Tera' : 'Activar Tera'}</button></p>` : '<p class="hint">Sin teratipo cargado</p>'}` : 'Elegí a quién te enfrentás.';
@@ -139,8 +140,8 @@ function render() {
     try { const next = {...rival,teraActive:!rival.teraActive}; const analysis = await api('/api/analyze',{team,rival:next}); rival = next; result = analysis; persist(); render(); notice(''); }
     catch (e) { notice(e.message); } finally { busy = false; }
   });
-  $('choose-rival').disabled = !rival;
-  $('choose-rival').textContent = rival ? 'Editar seleccionado' : 'Seleccioná un rival arriba';
+  $('choose-rival').disabled = false;
+  $('choose-rival').textContent = rival ? 'Editar seleccionado' : '+ Elegir rival';
   $('revealed').innerHTML = result.rival ? `<h3 class="minor">Ataques cargados · ${result.rival.moves.length} / 4</h3><div class="revealed">${Array.from({length:4},(_,i) => {
     const m = result.rival.moves[i]; return `<button class="move-slot secondary" data-reveal="${i}">${m ? `${badge(m.type)} <span>${esc(m.label)}</span>${moveEffectsHtml(m)}` : '+ Agregar ataque'}</button>`;
   }).join('')}</div><p class="hint">${result.rival.moves.length < 4 ? 'Hay espacios de ataques vacíos.' : 'Cuatro ataques cargados.'}</p>` : '';
@@ -212,7 +213,7 @@ async function loadPokemon(value, ability = null, preserve = false) {
       $('ability').insertAdjacentHTML('beforeend', `<option value="${esc(ability)}">${esc(ability.replaceAll('-', ' '))} (randomizada)</option>`);
     }
     if (ability) $('ability').value = ability;
-    if (!preserve) { $('item-input').value = ''; setMoveFields(editing === null ? defaultMoves(p.types) : []); }
+    if (!preserve) { $('item-input').value = ''; setMoveFields(defaultMoves(p.types)); }
   } catch (e) { if (epoch === editEpoch) { $('form-error').textContent = e.message; $('pokemon-preview').textContent = ''; } }
   finally { if (epoch === editEpoch) { loadingPokemon = false; $('save').disabled = !chosen; } }
 }
@@ -319,7 +320,7 @@ $('import-form').addEventListener('submit', async event => {
     $('confirm-import').textContent = 'Importar equipo';
   }
 });
-$('choose-rival').addEventListener('click', () => { if (rival) openEditor('rival'); });
+$('choose-rival').addEventListener('click', () => openEditor('rival'));
 $('edit-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (!chosen || loadingPokemon || busy) return;
