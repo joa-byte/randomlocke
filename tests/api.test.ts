@@ -75,3 +75,22 @@ test('cache coalesces concurrent requests, persists on disk and does not retain 
     await assert.rejects(client.get('pokemon/missing')); await assert.rejects(client.get('pokemon/missing')); assert.equal(mock.count(),3);
   } finally { await rm(dir,{recursive:true}); }
 });
+
+test('a missing ability detail does not turn an existing Pokémon into a 404', async () => {
+  const dir = await mkdtemp(join(tmpdir(),'randomlocke-ability-'));
+  const fetcher: typeof fetch = async input => {
+    const path = new URL(String(input)).pathname;
+    if (path.endsWith('/pokemon/pyroar/')) {
+      return Response.json({...pikachu,name:'pyroar',id:668,abilities:[{ability:{name:'unavailable-ability'},is_hidden:false}]});
+    }
+    return new Response('{}',{status:404});
+  };
+  const client = new PokeClient(fetcher,dir);
+  try {
+    const p = await client.pokemon('pyroar');
+    assert.equal(p.id,'pyroar');
+    assert.equal(p.abilities[0].id,'unavailable-ability');
+    assert.equal(p.abilities[0].description,null);
+    await assert.rejects(client.pokemon('missing'), /No encontrado en PokéAPI: pokemon\\/missing/);
+  } finally { await rm(dir,{recursive:true}); }
+});
