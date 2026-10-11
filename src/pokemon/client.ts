@@ -82,7 +82,7 @@ export class PokeClient {
     try {
       const suffix = path.includes('/') ? '/' : '?limit=10000';
       const response = await this.fetcher(`https://pokeapi.co/api/v2/${path}${suffix}`, {signal: AbortSignal.timeout(15000)});
-      if (!response.ok) throw new ApiError(response.status === 404 ? 'No encontrado en PokéAPI' : 'PokéAPI no está disponible', response.status === 404 ? 404 : 502);
+      if (!response.ok) throw new ApiError(response.status === 404 ? `No encontrado en PokéAPI: ${path}` : `PokéAPI no está disponible (${response.status}): ${path}`, response.status === 404 ? 404 : 502);
       const data = await response.json() as Resource;
       try { await mkdir(this.cacheDir, {recursive: true}); await writeFile(file, JSON.stringify({time: Date.now(), data})); } catch { /* Read-only disk: memory cache still works. */ }
       return data;
@@ -110,8 +110,14 @@ export class PokeClient {
       stats: Object.fromEntries(p.stats.map((s: Resource) => [s.stat.name, s.base_stat])) as Stats,
       sprite: p.sprites.front_default ?? null,
       abilities: await Promise.all(p.abilities.map(async (a: Resource) => {
-        const detail = await this.get(`ability/${a.ability.name}`);
-        return {id: a.ability.name, label: localized(detail, 'ability'), description:abilityDescription(detail), hidden: a.is_hidden};
+        // Some Pokémon reference abilities whose detail endpoint is unavailable.
+        // Keep the Pokémon usable rather than turning an ability-detail 404 into a Pokémon 404.
+        let detail: Resource | null = null;
+        try { detail = await this.get(`ability/${a.ability.name}`); }
+        catch (error) {
+          if (!(error instanceof ApiError && error.status === 404)) throw error;
+        }
+        return {id: a.ability.name, label: detail ? localized(detail, 'ability') : translated('ability', undefined, title(a.ability.name)), description: detail ? abilityDescription(detail) : null, hidden: a.is_hidden};
       })) };
   }
   async move(id: string): Promise<Move> {
